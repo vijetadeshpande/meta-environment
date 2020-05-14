@@ -30,7 +30,7 @@ import cluster_operations as c_op
 # 1. get list of directories which have the raw data 
 # 2. import all data (if there's no compressed file, else import compressed data)
 # 3. save the data (for each directory and all data combined)
-PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data and results/CEPAC RUNS'
+PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
 IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input']
 SEQ_LEN = 60
 batch_list = os.listdir(PATH_RAW)
@@ -113,7 +113,7 @@ EXAMPLES = len(collected_data_out[feat])
 
 #%% WHICH OUTPUT FEATURES WE WANT TO USE FOR REGRESSION
 
-OUT_FEATURES = ['infections', 'susceptibles'] #['transmissions', 'infections', 'susceptibles']
+OUT_FEATURES = ['transmissions', 'infections', 'susceptibles'] #['transmissions', 'infections', 'susceptibles']
 
 #%%
 output_tensor = np.zeros((EXAMPLES, SEQ_LEN+1, len(OUT_FEATURES)))

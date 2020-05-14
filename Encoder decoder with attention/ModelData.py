@@ -9,7 +9,7 @@ import pandas as pd
 from torchtext import data
 import torch
 import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 import utils
 import os
 import numpy as np

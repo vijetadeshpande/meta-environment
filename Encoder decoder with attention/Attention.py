@@ -10,17 +10,19 @@ import torch.nn.functional as F
 import torch
 
 class Attention(nn.Module):
-    def __init__(self, enc_hidden_dim, dec_hidden_dim, n_layers, is_bidirectional = False):
+    def __init__(self, encoder, dec_hidden_dim, n_layers):
         super().__init__()
         
         # attention transfomation layer
-        factor = 2 * (is_bidirectional == True) + 1 * (is_bidirectional == False)
-        nn_input_dim = (enc_hidden_dim * factor) + (dec_hidden_dim)
+        enc_hidden_dim = encoder.hidden_dim
+        nn_input_dim = enc_hidden_dim + dec_hidden_dim
         nn_output_dim = dec_hidden_dim
         self.attn = nn.Linear(nn_input_dim, nn_output_dim)
         
         # learnable par
         self.v = nn.Linear(dec_hidden_dim, 1, bias = False)
+        
+        return
         
     def forward(self, dec_hidden, enc_outputs):
         

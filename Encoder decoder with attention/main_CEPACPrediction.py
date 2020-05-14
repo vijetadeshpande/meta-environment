@@ -21,10 +21,10 @@ import os
 import math
 
 # path variables
-datapath = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data and results/CEPAC RUNS/regression model input'
+datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 64)
+data_object = ModelData(datapath, batch_size = 32)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
@@ -32,14 +32,14 @@ INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
 ENC_HID_DIM = 100
 DEC_HID_DIM = 100
 N_LAYERS = 5
-ENC_DROPOUT = 0.75
-DEC_DROPOUT = 0.75
+ENC_DROPOUT = 0.8
+DEC_DROPOUT = 0.8
 DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
-enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT)
-attn = Attention(ENC_HID_DIM, DEC_HID_DIM, N_LAYERS)
-dec = Decoder(OUTPUT_DIM, DEC_HID_DIM, N_LAYERS, DEC_DROPOUT, ENC_HID_DIM, attention = attn)
+enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT, is_bidirectional = False)
+attn = Attention(enc, DEC_HID_DIM, N_LAYERS)
+dec = Decoder(OUTPUT_DIM, DEC_HID_DIM, N_LAYERS, DEC_DROPOUT, enc, attention = attn)
 model = Seq2Seq(enc, dec, DEVICE, attention = attn)
 
 # initialize values of learnable parameters
@@ -61,7 +61,7 @@ optimizer = optim.Adam(model.parameters())
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
 
 # training parameters
-N_EPOCHS = 1
+N_EPOCHS = 20
 CLIP = 1
 best_valid_loss = float('inf')
 
@@ -92,7 +92,7 @@ for epoch in range(N_EPOCHS):
         best_valid_loss = valid_loss
         torch.save(model.state_dict(), 'tut1-model.pt')        
 
-    print('WITHOUT ATTENTION: ')
+    #print('WITHOUT ATTENTION: ')
     print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
     print(f'\tTrain Loss: {train_loss:.4f} | Train PPL: {math.exp(train_loss):7.4f}')
     print(f'\t Val. Loss: {valid_loss:.4f} |  Val. PPL: {math.exp(valid_loss):7.4f}')

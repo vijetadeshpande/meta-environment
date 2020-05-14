@@ -20,8 +20,17 @@ class Seq2Seq(nn.Module):
         self.device = device
         
         #
-        assert encoder.hidden_dim == decoder.hidden_dim, \
-            "Hidden dimensions of encoder and decoder must be equal!"
+        self.encoder_layers = encoder.n_layers
+        self.decoder_layers = decoder.n_layers
+        self.encoder_hidden = encoder.hidden_dim
+        self.decoder_hidden = decoder.hidden_dim
+        
+        # linear transformation
+        #self.junction = nn.Linear(encoder.hidden_dim, decoder.hidden_dim)
+        
+        #
+        #assert encoder.hidden_dim == decoder.hidden_dim, \
+        #    "Hidden dimensions of encoder and decoder must be equal!"
         assert encoder.n_layers == decoder.n_layers, \
             "Encoder and decoder must have equal number of layers!"
             
@@ -52,6 +61,14 @@ class Seq2Seq(nn.Module):
             
         # first input to decoder is sos tokens
         input = target[0, :] # therefore, in your processes data, first element in sequence should correspond to <sos>
+        
+        # linear transformation on hidden and cell state
+        #hidden = self.junction(torch.reshape(hidden, (self.decoder_layers, BATCH_SIZE, self.encoder_hidden)))
+        #cell = self.junction(torch.reshape(cell, (self.decoder_layers, BATCH_SIZE, self.encoder_hidden)))
+        
+        # an option to linear transformation is to only take first 'n_layers' only
+        hidden = hidden[:self.encoder_layers, :, :]
+        cell = cell[:self.encoder_layers, :, :]
         
         # loop over target sequence length
         for t in range(1, TRG_LEN):

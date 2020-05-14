@@ -11,7 +11,7 @@ import torch.nn as nn
 
 
 class Decoder(nn.Module):
-    def __init__(self, output_dim, hidden_dim, n_layers, dropout, enc_hidden_dim, attention = None):
+    def __init__(self, output_dim, hidden_dim, n_layers, dropout, encoder, attention = None):
         super().__init__()
         
         #setting different dimension attributes
@@ -20,12 +20,8 @@ class Decoder(nn.Module):
         self.n_layers = n_layers
         self.attention = attention
         
-        # TODO: what if we want to use pre-trained embeddings
-        # embedding definition
-        #self.embedding = nn.Embedding(output_dim, embedding_dim)
-        
         # define type of unit cell
-        enc_hidden_dim = enc_hidden_dim * (attention != None)
+        enc_hidden_dim = encoder.hidden_dim
         self.rnn = nn.LSTM(input_size = (enc_hidden_dim + output_dim), 
                            hidden_size = hidden_dim, 
                            num_layers = n_layers, 
@@ -36,6 +32,8 @@ class Decoder(nn.Module):
         
         # define tranformation on output
         self.fc_out = nn.Linear(hidden_dim, output_dim)
+        
+        return
         
     def forward(self, input, hidden, cell, enc_outputs = None):
         

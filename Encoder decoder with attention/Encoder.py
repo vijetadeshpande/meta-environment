@@ -14,9 +14,17 @@ class Encoder(nn.Module):
         super().__init__()
         
         # set attributes for the encoder
-        self.hidden_dim = hidden_dim
         self.n_layers = n_layers
         self.is_bidirectional = is_bidirectional
+        
+        # NOTE: if encoder is bidirectional, then the hidden state will be of
+        # dimension = hidden_dim * 2. If want to take reference of this dimension
+        # at some other place, then it needs to be altered as follows.
+        # BUT
+        # we pass hidden_dim (and not self.hidden_dim) for defining our unit 
+        # rnn cell
+        factor = int(is_bidirectional) + 1
+        self.hidden_dim = hidden_dim * factor
         
         # TODO: what if we want to use pre-trained vectors
         # define embeddings
@@ -31,6 +39,8 @@ class Encoder(nn.Module):
         
         # define dropout
         self.dropout = nn.Dropout(dropout)
+        
+        return
         
     def forward(self, source):
         
