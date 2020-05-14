@@ -37,10 +37,10 @@ DEC_DROPOUT = 0.8
 DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
-enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT, is_bidirectional = False)
+enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT, is_bidirectional = True)
 attn = Attention(enc, DEC_HID_DIM, N_LAYERS)
-dec = Decoder(OUTPUT_DIM, DEC_HID_DIM, N_LAYERS, DEC_DROPOUT, enc, attention = attn)
-model = Seq2Seq(enc, dec, DEVICE, attention = attn)
+dec = Decoder(OUTPUT_DIM, DEC_HID_DIM, N_LAYERS, DEC_DROPOUT, enc)#, attention = attn)
+model = Seq2Seq(enc, dec, DEVICE)#, attention = attn)
 
 # initialize values of learnable parameters
 def init_weights(m):

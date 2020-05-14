@@ -113,14 +113,18 @@ def padding(list_in):
 # collect samples
 sample_n = 1000
 samples, sample_bounds, var_list, parameters = ipar.get_samples(sample_n)
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data and results/basefile'
-savepath = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data and results/CEPAC RUNS/NEW'
-seqpath = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/sequence data as input'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/basefile'
+savepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/NEW BATCH'
+seqpath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/NEW BATCH INPUT'
 INPUT_FEATURES = len(samples) - 4
 OUTPUT_FEATURES = 3
 EXAMPLES = sample_n
 N_FILES = 1
 SEQ_LEN = 60
+
+# if savepath does not exixts create one
+if not os.path.exists(savepath):
+    os.makedirs(savepath)
 
 
 if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exists(os.path.join(savepath, str(0), 'results'))):
@@ -190,7 +194,7 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
     c_op.parallelize_input(savepath, parallel = 5)
     
     # save feature tensor
-    utils.dump_jsonl(feature_tensor, os.path.join(seqpath, 'input_tensor.json'))
+    utils.dump_json(feature_tensor, os.path.join(seqpath, 'input_tensor.json'))
     
     # stop timer
     stop = timeit.default_timer()

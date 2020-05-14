@@ -21,7 +21,7 @@ class Decoder(nn.Module):
         self.attention = attention
         
         # define type of unit cell
-        enc_hidden_dim = encoder.hidden_dim
+        enc_hidden_dim = encoder.hidden_dim * int(attention != None)
         self.rnn = nn.LSTM(input_size = (enc_hidden_dim + output_dim), 
                            hidden_size = hidden_dim, 
                            num_layers = n_layers, 
