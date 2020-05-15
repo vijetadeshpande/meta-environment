@@ -7,9 +7,10 @@ Created on Wed May 13 23:57:13 2020
 """
 import torch
 import torch.nn as nn
+from numpy import random
 
 class LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False, teacher_forcing_ratio = 0.5):
         super().__init__()
         
         # set attributes
@@ -19,12 +20,13 @@ class LSTM(nn.Module):
         self.n_layers = n_layers
         self.is_bidirectional = is_bidirectional
         self.device = device
+        self.teacher_forcing_ratio = teacher_forcing_ratio
         
         # dropout
         self.dropout = nn.Dropout(dropout)
         
         # rnn cell
-        self.rnn = nn.LSTM(input_size = input_dim,
+        self.rnn = nn.LSTM(input_size = (input_dim + output_dim),
                           hidden_size = hidden_dim,
                           num_layers = n_layers,
                           batch_first = True,
@@ -42,30 +44,38 @@ class LSTM(nn.Module):
         # target = [batch size, seq len, output dim]
         
         # get shape 
-        (BATCH_SIZE, SEQ_LEN, INPUT_DIM) = source.shape
-        (_, _, OUTPUT_DIM) = target.shape
-        
+        (BATCH_SIZE, SRC_LEN, INPUT_DIM) = source.shape
+        (_, TRG_LEN, OUTPUT_DIM) = target.shape
+    
         # tensor for storing outputs at each time step
-        outputs = torch.zeros(SEQ_LEN, BATCH_SIZE, OUTPUT_DIM).to(self.device)
+        outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM).to(self.device)
         
         # inputs required for first time step
         hidden = torch.zeros(self.n_layers, BATCH_SIZE, self.hidden_dim)
         cell = torch.zeros(self.n_layers, BATCH_SIZE, self.hidden_dim)
         
         # iterate over the horizon
-        for t in range(0, SEQ_LEN):
+        for t in range(0, SRC_LEN):
             
-            # input for this time step
+            # use teacher forcing ratio
+            if t == 0:
+                teacher_force = True
+            else:
+                teacher_force = random.random() < self.teacher_forcing_ratio
+            output = target[:, t, :].unsqueeze(1) if teacher_force else output
+            
+            # input for this time step (concatenate input and last output)
             input = source[:, t, :].unsqueeze(1)
+            input = torch.cat((input, output), dim = 2)
             
-            # forward pass through GRU
+            # forward pass through LSTM
             output, (hidden, cell) = self.rnn(input, (hidden, cell))
             
             # linear transformation of output
             output = self.transform(output)
             
             # append
-            outputs[t, :, :] = output.squeeze(1)
+            outputs[t+1, :, :] = output.squeeze(1)
 
         
         return outputs

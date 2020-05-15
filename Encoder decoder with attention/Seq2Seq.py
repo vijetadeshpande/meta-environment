@@ -10,7 +10,7 @@ import torch.nn as nn
 from numpy import random
 
 class Seq2Seq(nn.Module):
-    def __init__(self, encoder, decoder, device, attention = None):
+    def __init__(self, encoder, decoder, device, attention = None, teacher_forcing_ratio = 0.5):
         super().__init__()
         
         # define encoder decoder attributes
@@ -18,6 +18,7 @@ class Seq2Seq(nn.Module):
         self.attention = attention
         self.decoder = decoder
         self.device = device
+        self.teacher_forcing_ratio = teacher_forcing_ratio
         
         #
         self.encoder_layers = encoder.n_layers
@@ -34,7 +35,7 @@ class Seq2Seq(nn.Module):
         assert encoder.n_layers == decoder.n_layers, \
             "Encoder and decoder must have equal number of layers!"
             
-    def forward(self, source, target, teacher_forcing_ratio = 0.5):
+    def forward(self, source, target):
         
         #src = [batch size, src len, input dim]
         #trg = [batch size, trg len, output dim]
@@ -84,14 +85,11 @@ class Seq2Seq(nn.Module):
             outputs[t] = output
             
             # decide if we are going to use teacher forcing or not
-            teacher_force = random.random() < teacher_forcing_ratio
-            
-            # get the highest predicted token from our predictions
-            #top1 = output.argmax(1) 
+            teacher_force = random.random() < self.teacher_forcing_ratio
             
             # if teacher forcing, use actual next token as next input
             # if not, use predicted token
-            input = target[t] #if teacher_force else top1
+            input = target[t] if teacher_force else output
         
         return outputs
         

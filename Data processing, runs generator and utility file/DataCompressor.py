@@ -31,9 +31,13 @@ import cluster_operations as c_op
 # 2. import all data (if there's no compressed file, else import compressed data)
 # 3. save the data (for each directory and all data combined)
 PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
-IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input']
+IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH INPUT']
 SEQ_LEN = 60
 batch_list = os.listdir(PATH_RAW)
+
+# collect output of the new batch
+if os.path.exists(os.path.join(PATH_RAW, 'NEW BATCH', str(0))):
+    c_op.collect_output(os.path.join(PATH_RAW, 'NEW BATCH'))
 
 # create a directory to save the input data for model
 path_regression_in = os.path.join(PATH_RAW, 'regression model input')
@@ -89,6 +93,9 @@ for batch in batch_list:
         
     # import standardized input data
     data_comp[batch]['input std'] = utils.load_jsonl(os.path.join(path_output, 'input_tensor.json'))
+    if len(data_comp[batch]['input std']) == 1:
+        data_comp[batch]['input std'] = data_comp[batch]['input std'][0]
+    
     
     # destandardization of the input data
     # ?

@@ -34,8 +34,8 @@ def train(model, data, optimizer, criterion, clip, cohort_size = 1):
         
         # calculate error
         TRG_LEN, BATCH_SIZE, OUTPUT_DIM = output.shape
-        output = torch.reshape(output[:, :, :], (TRG_LEN*BATCH_SIZE, OUTPUT_DIM))
-        trg = torch.reshape(trg[1:, :, :], (TRG_LEN*BATCH_SIZE, OUTPUT_DIM))
+        output = torch.reshape(output[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
+        trg = torch.reshape(trg[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
         
         # calculate loss
         loss = criterion(output, trg)

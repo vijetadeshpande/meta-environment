@@ -8,7 +8,7 @@ Created on Thu May 14 00:49:12 2020
 
 
 from ModelData import ModelData
-from SimpleGRU import SimpleGRU
+from GRU import GRU
 from train import train
 from evaluate import evaluate
 import time
@@ -22,18 +22,18 @@ import math
 datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 32)
+data_object = ModelData(datapath, batch_size = 8)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
-HID_DIM = 100
-N_LAYERS = 5
+HID_DIM = 120
+N_LAYERS = 4
 DROPOUT = 0.8
 DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
-model = SimpleGRU(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
+model = GRU(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
 
 # initialize values of learnable parameters
 def init_weights(m):
@@ -44,7 +44,7 @@ model.apply(init_weights)
 # count parameters
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-print(f'The model w/o attention has {count_parameters(model):,} trainable parameters')
+print(f'The model has {count_parameters(model):,} trainable parameters')
 
 # define optimizer
 optimizer = optim.Adam(model.parameters())

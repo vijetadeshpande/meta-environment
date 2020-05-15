@@ -53,8 +53,8 @@ def evaluate(model, data, criterion, seqpath):
             
             # calculate error
             TRG_LEN, BATCH_SIZE, OUTPUT_DIM = output.shape
-            output = torch.reshape(output[:, :, :], ((TRG_LEN - 0)*BATCH_SIZE, OUTPUT_DIM))
-            trg = torch.reshape(trg[1:, :, :], ((TRG_LEN - 0)*BATCH_SIZE, OUTPUT_DIM))
+            output = torch.reshape(output[1:, :, :], ((TRG_LEN - 1)*BATCH_SIZE, OUTPUT_DIM))
+            trg = torch.reshape(trg[1:, :, :], ((TRG_LEN - 1)*BATCH_SIZE, OUTPUT_DIM))
             loss = criterion(output, trg)
             
             # update error
