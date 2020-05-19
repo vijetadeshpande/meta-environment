@@ -27,16 +27,25 @@ def evaluate(model, data, criterion, seqpath):
     # import denormalization parameters
     mean_sd = pd.read_csv(os.path.join(seqpath, 'output_mean_and_sd.csv'), header = 0, index_col = 0)
     
+    # initialize tensor to store attention weights
+    (BATCH_SIZE, SRC_LEN, _) = data[0][0].shape
+    (_, TRG_LEN, _) = data[0][1].shape
+    attention_ws = torch.zeros((len(data), BATCH_SIZE, TRG_LEN-1, SRC_LEN))
+    
     with torch.no_grad():
+        idx = -1
         for example in data:
+            idx += 1
             
             # access the source and target sequence
             src = example[0]
             trg = example[1]
             
             # predict output and append
-            output = model(src, trg)#, 0) # switch off teacher forcing
+            output, attention_w = model(src, trg)#, 0) # switch off teacher forcing
             outputs.append(output.numpy())
+            CUR_SIZE, _, _ = attention_w.shape
+            attention_ws[idx, 0:CUR_SIZE, :, :] = attention_w[:, 1:, :]
             
             # denormalize prediction and append
             denorm_output = utils.denormalize(deepcopy(output.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
@@ -64,7 +73,8 @@ def evaluate(model, data, criterion, seqpath):
     all_metrics = {'average epoch loss': epoch_loss/len(data), 
                    'normalized prediction': outputs,
                    'denormalized prediction': denorm_outputs,
-                   'denormalized target': denorm_targets}
+                   'denormalized target': denorm_targets,
+                   'attention weights': attention_ws}
             
     return all_metrics
             

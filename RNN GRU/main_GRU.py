@@ -17,19 +17,23 @@ import torch.nn as nn
 import torch.optim as optim
 import os
 import math
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+import utils
 
 # path variables
 datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
+respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 8)
+data_object = ModelData(datapath, batch_size = 128)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
 HID_DIM = 120
 N_LAYERS = 4
-DROPOUT = 0.8
+DROPOUT = 0.5
 DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
@@ -54,7 +58,7 @@ optimizer = optim.Adam(model.parameters())
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
 
 # training parameters
-N_EPOCHS = 1
+N_EPOCHS = 4
 CLIP = 1
 best_valid_loss = float('inf')
 
@@ -81,7 +85,7 @@ for epoch in range(N_EPOCHS):
     # loss here by predicting the value of validation set 'x's
     valid_loss = 0
     # update validation loss if less than previously observed minimum
-    if valid_loss < best_valid_loss:
+    if valid_loss <= best_valid_loss:
         best_valid_loss = valid_loss
         torch.save(model.state_dict(), 'tut1-model.pt')        
 
@@ -91,9 +95,14 @@ for epoch in range(N_EPOCHS):
     print(f'\t Val. Loss: {valid_loss:.4f} |  Val. PPL: {math.exp(valid_loss):7.4f}')
 
 # testing/prediction
-model.load_state_dict(torch.load('tut1-model.pt'))
-prediction = evaluate(model, data_test, criterion, datapath)
+#model.load_state_dict(torch.load('tut1-model.pt'))
+prediction = evaluate(model, data_train, criterion, datapath)
 test_loss = prediction['average epoch loss']
+
+# save predicted values
+filename = os.path.join(respath, 'GRU_RNN_test_result_samples.json')
+utils.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
+
 
 print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
 

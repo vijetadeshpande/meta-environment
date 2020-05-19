@@ -43,16 +43,17 @@ class Seq2Seq(nn.Module):
         #e.g. if teacher_forcing_ratio is 0.75 we use ground-truth inputs 75% of the time
         
         # for the encoder (LSTM) we need the input of shape = (src len, batch size, input dim)
-        source = source.permute(1, 0, 2)
+        source = source.permute(1, 0, 2).to(self.device)
         
         # for the decoder (LSTM) we need input of shape = (trg len, batch size, output dim)
-        target = target.permute(1, 0, 2)
+        target = target.permute(1, 0, 2).to(self.device)
         
         # define tensor to store decoder outputs ()
         (SRC_LEN, BATCH_SIZE, INPUT_DIM) = source.shape
         (TRG_LEN, BATCH_SIZE, OUPTUT_DIM) = target.shape
         OUTPUT_DIM =  self.decoder.output_dim
-        outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM).to(self.device)
+        outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM, device = self.device)
+        attention_ws = torch.zeros(BATCH_SIZE ,TRG_LEN, SRC_LEN, device = self.device)
         
         # compute cell state and hidden state from encoder forward pass
         if self.attention == None:
@@ -77,9 +78,10 @@ class Seq2Seq(nn.Module):
             # forward pass of decoder (at first 't', hidden and cell will be 
             # taken from encoder output)
             if self.attention != None:
-                output, hidden, cell = self.decoder(input, hidden, cell, all_hidden)
+                output, hidden, cell, attention_w = self.decoder(input, hidden, cell, all_hidden)
+                attention_ws[:, t, :] = attention_w[:, 0, :]
             else:
-                output, hidden, cell = self.decoder(input, hidden, cell)
+                output, hidden, cell, _ = self.decoder(input, hidden, cell)
             
             # store output
             outputs[t] = output
@@ -91,5 +93,5 @@ class Seq2Seq(nn.Module):
             # if not, use predicted token
             input = target[t] if teacher_force else output
         
-        return outputs
+        return outputs, attention_ws
         

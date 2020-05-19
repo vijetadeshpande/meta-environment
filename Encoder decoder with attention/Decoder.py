@@ -48,6 +48,9 @@ class Decoder(nn.Module):
         # unsqueeze input to match the shape [1, batch_size, output_dim]
         input = input.unsqueeze(0)
         
+        # initiate alpha
+        alphas = None
+        
         if self.attention != None:
             # calculate attention over input sequence
             alphas = self.attention(hidden, enc_outputs)
@@ -81,7 +84,7 @@ class Decoder(nn.Module):
         # output dim check
         # prediction = [batch size, output feature size]
         
-        return prediction, hidden, cell
+        return prediction, hidden, cell, alphas
         
         
         

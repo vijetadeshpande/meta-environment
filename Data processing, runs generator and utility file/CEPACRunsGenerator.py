@@ -194,6 +194,8 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
     c_op.parallelize_input(savepath, parallel = 5)
     
     # save feature tensor
+    if not os.path.exists(seqpath):
+        os.makedirs(seqpath)
     utils.dump_json(feature_tensor, os.path.join(seqpath, 'input_tensor.json'))
     
     # stop timer

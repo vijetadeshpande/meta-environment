@@ -17,9 +17,13 @@ import torch.nn as nn
 import torch.optim as optim
 import os
 import math
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+import utils
 
 # path variables
 datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
+respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # create data object
 data_object = ModelData(datapath, batch_size = 8)
@@ -54,7 +58,7 @@ optimizer = optim.Adam(model.parameters())
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
 
 # training parameters
-N_EPOCHS = 10
+N_EPOCHS = 20
 CLIP = 1
 best_valid_loss = float('inf')
 
@@ -81,7 +85,7 @@ for epoch in range(N_EPOCHS):
     # loss here by predicting the value of validation set 'x's
     valid_loss = 0
     # update validation loss if less than previously observed minimum
-    if valid_loss < best_valid_loss:
+    if valid_loss <= best_valid_loss:
         best_valid_loss = valid_loss
         torch.save(model.state_dict(), 'tut1-model.pt')        
 
@@ -94,6 +98,10 @@ for epoch in range(N_EPOCHS):
 model.load_state_dict(torch.load('tut1-model.pt'))
 prediction = evaluate(model, data_test, criterion, datapath)
 test_loss = prediction['average epoch loss']
+
+# save predicted values
+filename = os.path.join(respath, 'LSTM_RNN_test_result_samples.json')
+utils.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
 
 print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
 

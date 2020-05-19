@@ -12,9 +12,14 @@ def train(model, data, optimizer, criterion, clip, cohort_size = 1):
     # initiliaze
     model.train()
     epoch_loss = 0
+    (BATCH_SIZE, SRC_LEN, _) = data[0][0].shape
+    (_, TRG_LEN, _) = data[0][1].shape
+    attention_ws = torch.zeros((len(data), BATCH_SIZE, TRG_LEN-1, SRC_LEN))
     
     # loop over all batches in iterator
+    idx = -1
     for example in data:
+        idx += 1
         
         # access the source and target sequence
         src = example[0]
@@ -25,7 +30,9 @@ def train(model, data, optimizer, criterion, clip, cohort_size = 1):
         
         # feed src to the encoder to get cell and hidden
         # then feed cell and hidden to deoder to get the output
-        output = model(src, trg)
+        output, attention_w = model(src, trg)
+        CUR_SIZE, _, _ = attention_w.shape
+        attention_ws[idx, 0:CUR_SIZE, :, :] = attention_w[:, 1:, :]
         
         #
         trg = trg.permute(1, 0, 2)
@@ -51,8 +58,11 @@ def train(model, data, optimizer, criterion, clip, cohort_size = 1):
         
         # update loss
         epoch_loss += loss.item()
+    
+    # take average of the loss
+    epoch_loss = epoch_loss / len(data)
         
     
-    return epoch_loss / len(data)
+    return epoch_loss, attention_ws
         
     
