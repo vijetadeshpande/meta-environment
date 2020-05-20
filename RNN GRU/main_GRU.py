@@ -38,6 +38,7 @@ DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
 model = GRU(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
+model = model.to(DEVICE)
 
 # initialize values of learnable parameters
 def init_weights(m):
@@ -56,6 +57,7 @@ optimizer = optim.Adam(model.parameters())
 # define error function (ignore padding and sos/eos tokens)
 #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
+criterion = criterion.to(DEVICE)
 
 # training parameters
 N_EPOCHS = 4
@@ -76,7 +78,7 @@ for epoch in range(N_EPOCHS):
     # start clock
     start_time = time.time()
     # train
-    train_loss = train(model, data_train, optimizer, criterion, CLIP)
+    train_loss = train(model, data_train, optimizer, criterion, CLIP, DEVICE)
     # stop clock
     end_time = time.time()
     epoch_mins, epoch_secs = epoch_time(start_time, end_time)
@@ -94,9 +96,20 @@ for epoch in range(N_EPOCHS):
     print(f'\tTrain Loss: {train_loss:.4f} | Train PPL: {math.exp(train_loss):7.4f}')
     print(f'\t Val. Loss: {valid_loss:.4f} |  Val. PPL: {math.exp(valid_loss):7.4f}')
 
+
+# shuffle the dataset and calculate error on training set again
+data_train_s = utils.tensor_shuffler(data_train, DEVICE)
+start_time = time.time()
+prediction_train = evaluate(model, data_train, criterion, DEVICE, datapath)
+prediction_train_s = evaluate(model, data_train_s, criterion, DEVICE, datapath)
+tt_loss, tt_loss_s = prediction_train['average epoch loss'], prediction_train_s['average epoch loss']
+end_time = time.time()
+pred_mins, pred_secs = epoch_time(start_time, end_time)
+
+
 # testing/prediction
 #model.load_state_dict(torch.load('tut1-model.pt'))
-prediction = evaluate(model, data_train, criterion, datapath)
+prediction = evaluate(model, data_train, criterion, DEVICE, datapath)
 test_loss = prediction['average epoch loss']
 
 # save predicted values

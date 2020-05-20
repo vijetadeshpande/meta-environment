@@ -30,13 +30,13 @@ datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and r
 respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 64)
+data_object = ModelData(datapath, batch_size = 128)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
-ENC_HID_DIM = 3
-DEC_HID_DIM = 3
+ENC_HID_DIM = 1
+DEC_HID_DIM = 1
 N_LAYERS = 1
 ENC_DROPOUT = 0.8
 DEC_DROPOUT = 0.8
@@ -85,7 +85,7 @@ for epoch in range(N_EPOCHS):
     # start clock
     start_time = time.time()
     # train
-    train_loss, _ = train(model, data_train, optimizer, criterion, CLIP)
+    train_loss, _ = train(model, data_train, optimizer, criterion, CLIP, DEVICE)
     # stop clock
     end_time = time.time()
     epoch_mins, epoch_secs = epoch_time(start_time, end_time)
@@ -103,9 +103,18 @@ for epoch in range(N_EPOCHS):
     print(f'\tTrain Loss: {train_loss:.4f} | Train PPL: {math.exp(train_loss):7.4f}')
     print(f'\t Val. Loss: {valid_loss:.4f} |  Val. PPL: {math.exp(valid_loss):7.4f}')
 
+# shuffle the dataset and calculate error on training set again
+data_train_s = utils.tensor_shuffler(data_train, DEVICE)
+start_time = time.time()
+prediction_train = evaluate(model, data_train, criterion, DEVICE, datapath)
+prediction_train_s = evaluate(model, data_train_s, criterion, DEVICE, datapath)
+tt_loss, tt_loss_s = prediction_train['average epoch loss'], prediction_train_s['average epoch loss']
+end_time = time.time()
+pred_mins, pred_secs = epoch_time(start_time, end_time)
+
 # testing/prediction
 #model.load_state_dict(torch.load('tut1-model.pt'))
-prediction = evaluate(model, data_test, criterion, datapath)
+prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
 test_loss = prediction['average epoch loss']
 
 # save predicted values

@@ -8,7 +8,7 @@ Created on Sun Mar  8 13:55:06 2020
 import torch.nn
 import torch
 
-def train(model, data, optimizer, criterion, clip, cohort_size = 1):
+def train(model, data, optimizer, criterion, clip, device, cohort_size = 1):
     # initiliaze
     model.train()
     epoch_loss = 0
@@ -17,8 +17,8 @@ def train(model, data, optimizer, criterion, clip, cohort_size = 1):
     for example in data:
         
         # access the source and target sequence
-        src = example[0]
-        trg = example[1]
+        src = example[0].to(device)
+        trg = example[1].to(device)
         
         # make gradients equal to zero
         optimizer.zero_grad()

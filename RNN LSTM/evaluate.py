@@ -13,7 +13,7 @@ import pandas as pd
 import os
 from copy import deepcopy
 
-def evaluate(model, data, criterion, seqpath):
+def evaluate(model, data, criterion, device, seqpath):
     
     # initialize
     model.eval()
@@ -31,8 +31,8 @@ def evaluate(model, data, criterion, seqpath):
         for example in data:
             
             # access the source and target sequence
-            src = example[0]
-            trg = example[1]
+            src = example[0].to(device)
+            trg = example[1].to(device)
             
             # predict output and append
             output = model(src, trg)#, 0) # switch off teacher forcing

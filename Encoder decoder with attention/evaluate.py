@@ -13,7 +13,7 @@ import pandas as pd
 import os
 from copy import deepcopy
 
-def evaluate(model, data, criterion, seqpath):
+def evaluate(model, data, criterion, device, seqpath):
     
     # initialize
     model.eval()
@@ -28,8 +28,8 @@ def evaluate(model, data, criterion, seqpath):
     mean_sd = pd.read_csv(os.path.join(seqpath, 'output_mean_and_sd.csv'), header = 0, index_col = 0)
     
     # initialize tensor to store attention weights
-    (BATCH_SIZE, SRC_LEN, _) = data[0][0].shape
-    (_, TRG_LEN, _) = data[0][1].shape
+    BATCH_SIZE, SRC_LEN, _ = data[0][0].shape
+    _, TRG_LEN, _ = data[0][1].shape
     attention_ws = torch.zeros((len(data), BATCH_SIZE, TRG_LEN-1, SRC_LEN))
     
     with torch.no_grad():
@@ -38,8 +38,8 @@ def evaluate(model, data, criterion, seqpath):
             idx += 1
             
             # access the source and target sequence
-            src = example[0]
-            trg = example[1]
+            src = example[0].to(device)
+            trg = example[1].to(device)
             
             # predict output and append
             output, attention_w = model(src, trg)#, 0) # switch off teacher forcing

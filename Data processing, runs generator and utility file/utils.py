@@ -14,6 +14,7 @@ import _pickle as pickle
 import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import random
 
 def dump_json(data, filename):
     with open(filename, 'w') as fp:
@@ -234,4 +235,34 @@ def featurize_in_file(samples, sample_bounds, example_n, SEQ_LEN):
         feature_mat.loc[:, var] = val
     
     return feature_mat.values.tolist()
+
+def tensor_shuffler(data, device):
+    
+    #
+    import torch
+    
+    # shape 
+    BATCH_SIZE, SRC_SEQ, INPUT_DIM = data[0][0].shape
+    _, TRG_SEQ, OUTPUT_DIM = data[0][1].shape
+    
+    #
+    x, y = [], []
+    for batch in data:
+        x += batch[0].numpy().tolist()
+        y += batch[1].numpy().tolist()
+    
+    # shuffle
+    data_list = list(zip(x, y))
+    random.shuffle(data_list)
+    x, y = zip(*data_list)
+    x, y = np.array(x), np.array(y)
+    
+    # create batches
+    data_s = []
+    for example in range(0, len(x), BATCH_SIZE):
+        x_batch, y_batch = x[example:example + BATCH_SIZE, :, :], y[example:example + BATCH_SIZE, :]
+        x_batch, y_batch = torch.tensor(x_batch, device = device).type('torch.FloatTensor'), torch.tensor(y_batch, device = device).type('torch.FloatTensor')
+        data_s.append((x_batch, y_batch))
+    
+    return data_s
 

@@ -52,8 +52,8 @@ class Seq2Seq(nn.Module):
         (SRC_LEN, BATCH_SIZE, INPUT_DIM) = source.shape
         (TRG_LEN, BATCH_SIZE, OUPTUT_DIM) = target.shape
         OUTPUT_DIM =  self.decoder.output_dim
-        outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM, device = self.device)
-        attention_ws = torch.zeros(BATCH_SIZE ,TRG_LEN, SRC_LEN, device = self.device)
+        outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM).to(self.device)
+        attention_ws = torch.zeros(BATCH_SIZE ,TRG_LEN, SRC_LEN).to(self.device)
         
         # compute cell state and hidden state from encoder forward pass
         if self.attention == None:
