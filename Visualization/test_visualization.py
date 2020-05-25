@@ -14,8 +14,11 @@ sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Vi
 
 
 # save plots for the predicted values
-readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/0'
-plotsavepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/0/plots'
+readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/Over fitting on LSTM and GRU'
+plotsavepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/Over fitting on LSTM and GRU/plots'
+
+#
+
 lineplot_object = FeatureSequencePlot(datapath = readdata, 
                                       plot_title = 'Feature wise fit', 
                                       savepath = plotsavepath)

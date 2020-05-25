@@ -26,13 +26,13 @@ datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and r
 respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 128)
+data_object = ModelData(datapath, batch_size = 64)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
-HID_DIM = 120
-N_LAYERS = 4
+HID_DIM = 512
+N_LAYERS = 2
 DROPOUT = 0.5
 DEVICE = 'cpu'
 
@@ -60,7 +60,7 @@ criterion = nn.MSELoss() #nn.SmoothL1Loss()
 criterion = criterion.to(DEVICE)
 
 # training parameters
-N_EPOCHS = 4
+N_EPOCHS = 20
 CLIP = 1
 best_valid_loss = float('inf')
 
@@ -87,7 +87,7 @@ for epoch in range(N_EPOCHS):
     # loss here by predicting the value of validation set 'x's
     valid_loss = 0
     # update validation loss if less than previously observed minimum
-    if valid_loss <= best_valid_loss:
+    if epoch == (N_EPOCHS - 1): #valid_loss <= best_valid_loss:
         best_valid_loss = valid_loss
         torch.save(model.state_dict(), 'tut1-model.pt')        
 

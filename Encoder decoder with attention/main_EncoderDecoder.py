@@ -10,9 +10,10 @@ from ModelData import ModelData
 from Encoder import Encoder
 from Decoder import Decoder
 from Seq2Seq import Seq2Seq
-from Attention import Attention
-from train import train
-from evaluate import evaluate
+from Attention import Attention as Att
+from Attention import CosineAttention as CosAtt
+from train_EncDec import train
+from evaluate_EncDec import evaluate
 import time
 import torch
 import torch.nn as nn
@@ -35,16 +36,16 @@ data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
-ENC_HID_DIM = 1
-DEC_HID_DIM = 1
+ENC_HID_DIM = 64
+DEC_HID_DIM = 64
 N_LAYERS = 1
-ENC_DROPOUT = 0.8
-DEC_DROPOUT = 0.8
+ENC_DROPOUT = 0.5
+DEC_DROPOUT = 0.5
 DEVICE = 'cpu'
 
 # initialize encoder, decoder and seq2seq model classes
-enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT, is_bidirectional = True)
-attn = Attention(enc, DEC_HID_DIM, N_LAYERS)
+enc = Encoder(INPUT_DIM, ENC_HID_DIM, N_LAYERS, ENC_DROPOUT, is_bidirectional = False)
+attn = CosAtt(enc, DEC_HID_DIM, N_LAYERS)
 dec = Decoder(OUTPUT_DIM, DEC_HID_DIM, N_LAYERS, DEC_DROPOUT, enc, attention = attn)
 model = Seq2Seq(enc, dec, DEVICE, attention = attn)
 
@@ -67,7 +68,7 @@ optimizer = optim.Adam(model.parameters())
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
 
 # training parameters
-N_EPOCHS = 1
+N_EPOCHS = 20
 CLIP = 1
 best_valid_loss = float('inf')
 

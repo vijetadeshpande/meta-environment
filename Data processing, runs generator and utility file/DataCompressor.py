@@ -31,7 +31,7 @@ import cluster_operations as c_op
 # 2. import all data (if there's no compressed file, else import compressed data)
 # 3. save the data (for each directory and all data combined)
 PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
-IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH INPUT']#, 'NEW BATCH', 'this']
+IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH INPUT1', 'NEW BATCH INPUT']#, 'NEW BATCH', 'this']
 SEQ_LEN = 60
 batch_list = os.listdir(PATH_RAW)
 

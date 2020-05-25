@@ -60,7 +60,7 @@ criterion = nn.MSELoss() #nn.SmoothL1Loss()
 criterion = criterion.to(DEVICE)
 
 # training parameters
-N_EPOCHS = 4
+N_EPOCHS = 20
 CLIP = 1
 best_valid_loss = float('inf')
 

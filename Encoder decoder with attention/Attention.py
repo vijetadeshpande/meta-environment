@@ -55,3 +55,39 @@ class Attention(nn.Module):
         # attention= [batch size, src len]
         
         return attention
+    
+class CosineAttention(nn.Module):
+    def __init__(self, encoder, dec_hidden_dim, n_layers):
+        super().__init__()
+        
+        # dimentional properties
+        self.enc_hidden_dim = encoder.hidden_dim
+        self.enc_is_bidirectional = encoder.is_bidirectional
+        
+        # in this case hidden dim of encoder and decoder should be same
+        self.similarity = nn.CosineSimilarity()
+        
+        
+        return
+    
+    def forward(self, dec_hidden, enc_outputs):
+        
+        # input dim check
+        # dec_hidden = [num_layers, batch size, dec hid dim]
+        # encoder_outputs = [src len, batch size, enc hid dim * 2]
+        SRC_LEN = enc_outputs.shape[0]
+        if self.enc_is_bidirectional:
+            enc_hidden = self.enc_hidden_dim/2
+        else:
+            enc_hidden = self.enc_hidden_dim
+        
+        # reshape
+        enc_outputs = enc_outputs[:, :, 0:enc_hidden].permute(1, 2, 0)
+        dec_hidden = dec_hidden[-1, :, :].repeat(SRC_LEN, 1, 1).permute(1, 2, 0)
+        
+        # calculate similarity
+        sim = self.similarity(enc_outputs, dec_hidden)
+        attention = F.softmax(sim, dim = 1)
+        
+        return attention
+        

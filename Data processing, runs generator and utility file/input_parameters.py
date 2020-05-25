@@ -8,6 +8,8 @@ Created on Thu Apr 30 16:52:25 2020
 import scipy as sp
 import numpy as np
 from scipy.stats import truncnorm, bernoulli, uniform
+import utils
+import math
 
 #%% aux functions
 def define_distribution(dict_in, distribution):
@@ -110,16 +112,20 @@ def get_samples(sample_n):
         
         # age             
         elif var == 'InitAge mean':
-            sample_bounds[var] = {'lb': np.multiply(24, 12), 'ub': np.multiply(35, 12),
-                                 'mean': np.multiply(30, 12), 'sd': np.multiply(3, 12)}
+            sample_bounds[var] = {'lb': 288, #np.multiply(24, 12), 
+                                 'ub': 420, #np.multiply(35, 12),
+                                 'mean': 360, #np.multiply(30, 12), 
+                                 'sd': 36} #np.multiply(3, 12)
         elif var == 'InitAge sd':
-             sample_bounds[var] = {'lb': np.multiply(0, 12), 'ub': np.multiply(10, 12),
-                                 'mean': np.multiply(5, 12), 'sd': np.multiply(2, 12)}
+             sample_bounds[var] = {'lb': 0,#np.multiply(0, 12), 
+                                  'ub': 120, #np.multiply(10, 12),
+                                  'mean': 60, #np.multiply(5, 12), 
+                                  'sd': 24} #np.multiply(2, 12)
         
         # infection related parameters
         elif var == 'UseHIVIncidReduction':
             sample_bounds[var] = {'lb': 0, 'ub': 1,
-                                 'p': 0.7}
+                                 'p': 0}
         elif var ==  'HIVIncidReductionStopTime':
             sample_bounds[var] = {'lb': horizon, 'ub': horizon}
         elif var == 'HIVIncidReductionCoefficient':
@@ -130,7 +136,7 @@ def get_samples(sample_n):
                                  'mean': 3, 'sd': 1.5}
         elif var == 'PrEPEnable':
             sample_bounds[var] = {'lb': 0, 'ub': 1,
-                                 'p': 0.7}
+                                 'p': 0}
         elif var == 'PrEPCoverage':
             sample_bounds[var] = {'lb': 0, 'ub': 80,
                                  'mean': 30, 'sd': 20} # should be divided by 100
@@ -156,7 +162,7 @@ def get_samples(sample_n):
     
     #%% SAMPLING FOR INDEPENDENT VAR
     
-    # define distribution and sample
+    # define distribution and take samples
     samples = {}
     for var in sample_bounds:
         if var in ['InitAge mean', 'InitAge sd', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPCoverage', 'PrEPDuration', 'onART', 'prevalence', 'DynamicTransmissionNumHIVPosHRG', 'DynamicTransmissionPropHRGAttrib']:
