@@ -99,7 +99,7 @@ def community_benefit(run_A, run_B):
     # calculate average monthly incidence probability in SQ
     step_2 = calculate_average_prob(np.sum(run_A[:, :, 1]))
     # calculate average monthly incidence prob in INV
-    step_3 = calculate_average_prob(np.sum(run_A[:, :, 1]) - step_1)
+    step_3 = calculate_average_prob(np.sum(run_B[:, :, 1]) - step_1)
     # difference in avg monthly prob
     step_4 = step_3 - step_2
     # monthly prob at time 't' for INV

@@ -70,12 +70,13 @@ class FeatureSequencePlot:
     def tensorize(self, data):
         
         data_out = {}
+        rand_ex = [3, 27, 33]
         
         for file in data:
             if len(data[file]) != 2:
                 continue
             y_hat, y = data[file][0], data[file][1]
-            y_hat, y = np.array(y_hat)[1:, [1, 3, 5], :], np.array(y)[1:, [1, 3, 5], :]
+            y_hat, y = np.array(y_hat)[1:, rand_ex, :], np.array(y)[1:, rand_ex, :]
             data_out[self.filename_to_key(file)] = {'Regression': y_hat, 'CEPAC': y}
         
         return data_out

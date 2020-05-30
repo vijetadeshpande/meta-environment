@@ -97,7 +97,8 @@ def denormalize(x, mean, sd):
     SEQ_LEN, BATCH, FEATURES = x.shape
     # loop over features
     for feature in range(0, FEATURES):
-        x[1:, :, feature] = np.multiply(x[1:, :, feature], sd[feature]) + mean[feature]
+        x[1:, :, feature] = (x[1:, :, feature] * sd[feature]) + mean[feature]
+        #x[1:, :, feature] = np.multiply(x[1:, :, feature], sd[feature]) + mean[feature]
     
     return x
 
@@ -187,11 +188,12 @@ def get_incidence_sequence(samples, example_n, SEQ_LEN):
 
 def get_feature_vector():
     
-    FEATURE_VEC = ['UseHIVIncidReduction', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPEnable', 'PrEPCoverage', 'PrepIncidMale']
+    FEATURE_VEC = ['UseHIVIncidReduction', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPEnable', 'PrEPCoverage', 'PrepIncidMale', 'DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionPropHRGAttrib', 'DynamicTransmissionNumHIVPosHRG', 'prevalence']
     
     return FEATURE_VEC
 
 def featurize_in_file(samples, sample_bounds, example_n, SEQ_LEN):
+    
     
     # for simplicity I am a state of the system as a vector in following feature space
     # and order is mainted in such fashion to resemble the CEPAC flow of work
@@ -201,8 +203,8 @@ def featurize_in_file(samples, sample_bounds, example_n, SEQ_LEN):
     feature_mat = pd.DataFrame(0, index = np.arange(SEQ_LEN), columns = FEATURE_VEC)
     for var in FEATURE_VEC:
         
-        # switch like features
-        if var in ['UseHIVIncidReduction', 'PrEPEnable', 'HIVIncidReductionCoefficient']:
+        # switch like features (or the features which will have same value for SEQ_LEN)
+        if var in ['UseHIVIncidReduction', 'PrEPEnable', 'HIVIncidReductionCoefficient', 'DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionPropHRGAttrib', 'DynamicTransmissionNumHIVPosHRG', 'prevalence']:
             val = expand_input(samples[var][example_n], SEQ_LEN)
             if (var == 'HIVIncidReductionCoefficient'):
                 if (samples['HIVIncidReductionStopTime'][example_n] < SEQ_LEN-1):
@@ -210,7 +212,11 @@ def featurize_in_file(samples, sample_bounds, example_n, SEQ_LEN):
                     val[samples['HIVIncidReductionStopTime'][example_n]:] = sample_bounds['HIVIncidReductionStopTime']['ub']
                 # calculate z-score of the val
                 val = z_score(val, sample_bounds['HIVIncidReductionCoefficient']['mean'], sample_bounds['HIVIncidReductionCoefficient']['sd'])
+            elif var in ['DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionNumHIVPosHRG']:
+                # calculate z-score
+                val = z_score(val, sample_bounds[var]['mean'], sample_bounds[var]['sd'])
         
+            
         # weibull uptake probabilities
         elif var == 'PrEPCoverage':
             target_uptake, target_time, shape = samples['PrEPCoverage'][example_n], samples['PrEPDuration'][example_n], samples['PrEPShape'][example_n]
@@ -228,7 +234,7 @@ def featurize_in_file(samples, sample_bounds, example_n, SEQ_LEN):
             val_prep = np.multiply(factor, val)
             feature_mat.loc[:, 'PrepIncidMale'] = val_prep
             
-        elif var == 'PrepIncidMale':
+        elif var in ['PrepIncidMale', 'DynamicTransmissionNumHIVNegHRG']:
             continue
         
         # store
@@ -265,4 +271,24 @@ def tensor_shuffler(data, device):
         data_s.append((x_batch, y_batch))
     
     return data_s
+
+# Function to insert row in the dataframe 
+def Insert_row_(row_number, df, row_value): 
+    # Slice the upper half of the dataframe 
+    df1 = df[0:row_number] 
+   
+    # Store the result of lower half of the dataframe 
+    df2 = df[row_number:] 
+   
+    # Inser the row in the upper half dataframe 
+    df1.loc[row_number]=row_value 
+   
+    # Concat the two dataframes 
+    df_result = pd.concat([df1, df2]) 
+   
+    # Reassign the index labels 
+    df_result.index = [*range(df_result.shape[0])] 
+   
+    # Return the updated dataframe 
+    return df_result
 

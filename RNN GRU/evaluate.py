@@ -53,9 +53,16 @@ def evaluate(model, data, criterion, device, seqpath):
             
             # calculate error
             TRG_LEN, BATCH_SIZE, OUTPUT_DIM = output.shape
-            output = torch.reshape(output[1:, :, :], ((TRG_LEN - 1)*BATCH_SIZE, OUTPUT_DIM))
-            trg = torch.reshape(trg[1:, :, :], ((TRG_LEN - 1)*BATCH_SIZE, OUTPUT_DIM))
-            loss = criterion(output, trg)
+            if str(criterion) in ['SmoothL1Loss()', 'MSELoss()']:
+                # reshape output and target
+                output = torch.reshape(output[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
+                trg = torch.reshape(trg[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
+                
+                # calculate loss
+                loss = criterion(output, trg)
+            elif str(criterion) == 'CosineSimilarity()':
+                # calculate error
+                loss = ((-1/(TRG_LEN*BATCH_SIZE)) * criterion(output, trg).sum().sum()) + 1
             
             # update error
             epoch_loss += loss.item()

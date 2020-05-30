@@ -5,7 +5,7 @@ Created on Sun May 17 17:00:54 2020
 
 @author: vijetadeshpande
 """
-
+import os
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Visualization')
 from ChartClasses import FeatureSequencePlot
@@ -14,8 +14,10 @@ sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Vi
 
 
 # save plots for the predicted values
-readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/Over fitting on LSTM and GRU'
-plotsavepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/Over fitting on LSTM and GRU/plots'
+readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/1'
+plotsavepath = os.path.join(readdata, 'plots3')
+if not os.path.exists(plotsavepath):
+    os.makedirs(plotsavepath)
 
 #
 

@@ -56,7 +56,7 @@ optimizer = optim.Adam(model.parameters())
 
 # define error function (ignore padding and sos/eos tokens)
 #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
-criterion = nn.MSELoss() #nn.SmoothL1Loss()
+criterion = nn.MSELoss() #nn.CosineSimilarity(dim = 2) #nn.SmoothL1Loss() #nn.MSELoss()
 criterion = criterion.to(DEVICE)
 
 # training parameters

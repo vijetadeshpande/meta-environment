@@ -5,13 +5,13 @@ Created on Sun May 24 03:14:14 2020
 
 @author: vijetadeshpande
 """
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
 import os
 import numpy as np
 import itertools
-import sys
 import torch
 from FunctionApproximator import GRUApproximator as FGRU
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
 import utils2
 
 #%% SOME PAR
@@ -52,7 +52,7 @@ for strategy in strategies:
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/GRU_best.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/tut1-model.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 Environment = FGRU(filepath)
 
@@ -73,9 +73,17 @@ for strategy in range(0, len(strategies)):
     SQ_ = Environment(data, z_path, DEVICE)
     
     # INT
-    X[:, :, 3] = 0
+    X[:, :, [3]] = 0
     data = [(X, Y)]
     INT_ = Environment(data, z_path, DEVICE)
+    
+    """
+    aaa = SQ_['denormalized prediction'][0]
+    bbb = INT_['denormalized prediction'][0]
+    """
+    #
+    aaa = SQ_['denormalized prediction'][0]
+    bbb = INT_['denormalized prediction'][0]
     
     # TX algo
     percentage_reduction, reduction_coeff = utils2.community_benefit(SQ_['denormalized prediction'][0], INT_['denormalized prediction'][0])

@@ -28,12 +28,13 @@ class GRUApproximator(nn.Module):
         
         # load file
         model.load_state_dict(torch.load(filepath))
+        model.eval()
         
         # set sttribute
         self.model = model
         
         #
-        self.criterion = nn.MSELoss().to(DEVICE) #nn.SmoothL1Loss()
+        self.criterion = nn.MSELoss().to(DEVICE) #nn.SmoothL1Loss().to(DEVICE)
         
         return
     

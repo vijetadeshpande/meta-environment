@@ -49,82 +49,25 @@ What are we changing in .in file for data generation
     4.3 Fix the shape parameter = 2
     4.4 Weibull uptake probabilities
 
-"""
-#%% aux functions
-def calculate_mean_sd(seq_out, seqpath):
-    
-    #
-    mean, sd = {}, {}
-    for feat in seq_out:
-        mean[feat], sd[feat] = np.mean(seq_out[feat]), np.std(seq_out[feat])
-    
-    # save a csv file for mean and sd of the output
-    par = pd.DataFrame(0, index = ['mean', 'sd'], columns = mean.keys())
-    for var in mean:
-        par.loc['mean', var] = mean[var]
-        par.loc['sd', var] = sd[var]
-    #par = par.drop(['multiplier'], axis = 1)
-    par.to_csv(os.path.join(seqpath, 'output_mean_and_sd.csv'))
-
-    return mean, sd
-
-def zscore_standardization(seq_out, mean, sd):
-    # from the calculated mean and standard deviation, this function
-    # performs the Z-score normalization on the output data
-    output_tensor = np.zeros((OUTPUT_FEATURES, EXAMPLES*N_FILES, SEQ_LEN))
-    output_dict = {'transmissions': [], 'infections': [], 'susceptibles': []}
-    for feat in seq_out:
-        for example in range(0, len(seq_out[feat])):
-            z_score = np.divide((seq_out[feat][example][:SEQ_LEN] - mean[feat]), sd[feat])
-            output_dict[feat].append(z_score)
-    for feat in output_dict:
-        if feat == 'transmissions':
-            output_tensor[0, :, :] = output_dict[feat]
-        elif feat == 'infections':
-            output_tensor[1, :, :] = output_dict[feat]
-        elif feat == 'susceptibles':
-            output_tensor[2, :, :] = output_dict[feat]
-    
-    return output_tensor#, run_labels
-
-def take_cumulative_sum(list_in):
-    EXAMPLES, SEQ_LEN, FEATURES = len(list_in), len(list_in[0]), len(list_in[0][0])
-    
-    for example in range(0, EXAMPLES):
-        x = np.zeros((SEQ_LEN, FEATURES))
-        x[:, :] = list_in[example]
-        x = np.cumsum(x, axis = 1)
-        list_in[example, :, :] = x
-    
-    return list_in
-
-def padding(list_in):
-    
-    EXAMPLES, SEQ_LEN, FEATURES = len(list_in), len(list_in[0]), len(list_in[0][0])
-    mat = np.zeros((EXAMPLES, SEQ_LEN + 2, FEATURES))
-    
-    for example in range(0, EXAMPLES):
-        mat[:, 1:1+SEQ_LEN, :] = list_in[example]
-    
-    return mat.tolist()
-        
+"""        
         
 #%% WRITING SEQUENCE GENERATOR RUNS
-# collect samples
-sample_n = 1000
-samples, sample_bounds, var_list, parameters = ipar.get_samples(sample_n)
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/basefile'
-savepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/NEW BATCH'
-seqpath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/NEW BATCH INPUT'
-INPUT_FEATURES = len(samples) - 4
-OUTPUT_FEATURES = 3
-EXAMPLES = sample_n
-N_FILES = 1
+
+# few parameters
+EXAMPLES = 1000
 SEQ_LEN = 60
 
-# if savepath does not exixts create one
-if not os.path.exists(savepath):
-    os.makedirs(savepath)
+# collect samples
+samples, sample_bounds, var_list, parameters = ipar.get_samples(EXAMPLES)
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/basefile'
+savepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/NEW BATCH'
+
+# create folder to save the files
+savepath_cepac = os.path.join(savepath, 'Files for CEPAC')
+savepath_rnn = os.path.join(savepath, 'Files for RNN')
+for i in [savepath_cepac, savepath_rnn]:
+    if not os.path.exists(i):
+        os.makedirs(i)
 
 
 if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exists(os.path.join(savepath, str(0), 'results'))):
@@ -135,19 +78,25 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
     start = timeit.default_timer()
     
     # loop over samples one by one to create .in files
-    samples['Gaussian solution'] = []
+    #samples['Gaussian solution'] = []
     feature_tensor = []
-    for run in range(0, sample_n):
+    CEPAC_input_condensed = pd.DataFrame(-10, index = np.arange(EXAMPLES), columns = var_list)
+    for run in range(0, EXAMPLES):
         float_df = deepcopy(basefile)
-        
         # loop over all the variables
         for var in var_list:
+            
+            # store input value
+            if var != 'InitAge':
+                CEPAC_input_condensed.loc[run, var] = samples[var][run]
+            
             # ignore few variables
             if var in ['onART', 'prevalence', 'PrEPEfficacy', 'PrEPAdherence', 'PrepIncidMale', 'InitAge mean', 'InitAge sd']:
                 continue
             
             # else replace value
             elif var in ['HIVmthIncidMale']:
+    
                 # print
                 #print('This variable has been altered in .in file: %s'%(var))
                 
@@ -180,7 +129,7 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
                 float_df = t_op.replace_values(var, samples[var][run], float_df)
         
         # save the file
-        name = os.path.join(savepath, 'sample_' + str(run) + '.in')
+        name = os.path.join(savepath_cepac, 'sample_' + str(run) + '.in')
         link.write_cepac_in_file(name, float_df)
         
         # featurizarion of the .in file
@@ -190,13 +139,17 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
         # print
         print(run)
         
+    # save condensed cepac input files
+    CEPAC_input_condensed = CEPAC_input_condensed.to_dict()
+    utils.dump_json(CEPAC_input_condensed, os.path.join(savepath_rnn, 'CEPAC_input.json'))
+    
     # parallelize input files
-    c_op.parallelize_input(savepath, parallel = 5)
+    c_op.parallelize_input(savepath_cepac, parallel = 5)
     
     # save feature tensor
-    if not os.path.exists(seqpath):
-        os.makedirs(seqpath)
-    utils.dump_json(feature_tensor, os.path.join(seqpath, 'input_tensor.json'))
+    if not os.path.exists(savepath_rnn):
+        os.makedirs(savepath_rnn)
+    utils.dump_json(feature_tensor, os.path.join(savepath_rnn, 'RNN_source.json'))
     
     # stop timer
     stop = timeit.default_timer()
