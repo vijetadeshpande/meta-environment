@@ -14,7 +14,7 @@ sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Vi
 
 
 # save plots for the predicted values
-readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/1'
+readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/2'
 plotsavepath = os.path.join(readdata, 'plots3')
 if not os.path.exists(plotsavepath):
     os.makedirs(plotsavepath)

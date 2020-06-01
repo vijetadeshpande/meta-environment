@@ -46,6 +46,9 @@ class FeatureSequencePlot:
         data = utils.load_all_json(datapath)
         self.data = data
         
+        # which test examples to plot
+        self.examples = np.arange(10, 20)
+        
         # color pallete
         self.col_pal = sns.color_palette(palette)
         
@@ -70,7 +73,7 @@ class FeatureSequencePlot:
     def tensorize(self, data):
         
         data_out = {}
-        rand_ex = [3, 27, 33]
+        rand_ex = self.examples
         
         for file in data:
             if len(data[file]) != 2:
@@ -165,7 +168,7 @@ class FeatureSequencePlot:
         line_alpha = 0.9
         
         # 
-        for example in range(3):
+        for example in range(len(self.examples)):
             for feature in ['trans.', 'infec.', 'sus.']:
                 float_df = df.loc[df.loc[:, 'feature'] == feature, :]
                 float_df = float_df.loc[float_df.loc[:, 'Example number'] == example, :]

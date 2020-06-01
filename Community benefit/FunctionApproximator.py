@@ -21,7 +21,7 @@ class GRUApproximator(nn.Module):
         # then we load the .pt file and we are all set
         
         # create model
-        INPUT_DIM, OUTPUT_DIM = 6, 3
+        INPUT_DIM, OUTPUT_DIM = 10, 3
         HID_DIM, N_LAYERS, DROPOUT, DEVICE  = 512, 2, 0.5, 'cpu'
         model = GRU(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
         model = model.to(DEVICE)

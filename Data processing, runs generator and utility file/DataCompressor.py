@@ -81,7 +81,6 @@ for batch in batch_list:
                 
             # import raw data
             data_cepac[batch] = link.import_all_cepac_out_files(os.path.join(path_cepac, 'results'), module = 'regression')
-            data_cepac[batch] = utils.sort_output_dict(data_cepac[batch])
             
             for example in data_cepac[batch]:
                 data_cepac[batch][example].pop('multiplier')
@@ -102,7 +101,7 @@ for batch in data_cepac:
 
 # now we need all the data in 'data_cepac' in one place to calculate mean, sd anf standardize the output data from it
 TOTAL_EXAMPLES = sum([len(data_cepac[i]) for i in data_cepac])
-cepac_output, rnn_output = np.zeros((TOTAL_EXAMPLES, SEQ_LEN, OUTPUT_DIM)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN, OUTPUT_DIM))
+cepac_output, rnn_output = np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM))
 cepac_input, rnn_input = [], []
 #idx_example = -1
 for batch in data_cepac:
@@ -115,7 +114,7 @@ for batch in data_cepac:
         idx_feature = -1
         for feature in data_cepac[batch][example]:
             idx_feature += 1
-            cepac_output[idx_example, :, idx_feature] = data_cepac[batch][example][feature]
+            cepac_output[idx_example, 1:, idx_feature] = data_cepac[batch][example][feature]
         
 # calculate mean and std of output values
 mean, std = np.zeros((OUTPUT_DIM)), np.zeros((OUTPUT_DIM))
@@ -125,7 +124,7 @@ for feature in range(OUTPUT_DIM):
     std[feature] = np.std(cepac_output[:, :, feature])
     
     # standardize the data
-    rnn_output[:, :, feature] = (cepac_output[:, :, feature] - mean[feature])/std[feature]
+    rnn_output[:, 1:, feature] = (cepac_output[:, 1:, feature] - mean[feature])/std[feature]
     
 
 # few adjustments

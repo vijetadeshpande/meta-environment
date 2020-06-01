@@ -52,7 +52,7 @@ for strategy in strategies:
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/tut1-model.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/new-model.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 Environment = FGRU(filepath)
 
