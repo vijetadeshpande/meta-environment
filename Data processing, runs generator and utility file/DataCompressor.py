@@ -37,7 +37,7 @@ y_data = np.transpose(y_data, axes = [1,2,0])
 # 2. import all data (if there's no compressed file, else import compressed data)
 # 3. save the data (for each directory and all data combined)
 PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
-IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH INPUT1', 'NEW BATCH INPUT']#, 'NEW BATCH', 'this']
+IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH_1', 'NEW BATCH_2']#, 'NEW BATCH', 'this']
 SEQ_LEN, INPUT_DIM, OUTPUT_DIM = 60, 10, 3
 batch_list = os.listdir(PATH_RAW)
 
@@ -81,6 +81,7 @@ for batch in batch_list:
                 
             # import raw data
             data_cepac[batch] = link.import_all_cepac_out_files(os.path.join(path_cepac, 'results'), module = 'regression')
+            data_cepac[batch] = utils.sort_output_dict(data_cepac[batch])
             
             for example in data_cepac[batch]:
                 data_cepac[batch][example].pop('multiplier')
@@ -93,19 +94,24 @@ for batch in batch_list:
         
         else:
             data_cepac[batch] = data_rnn[batch].pop('CEPAC_output')
+            
+
+# coverting keys from str to int 
+for batch in data_cepac:
+    data_cepac[batch] = utils.sort_output_dict(data_cepac[batch])
 
 # now we need all the data in 'data_cepac' in one place to calculate mean, sd anf standardize the output data from it
 TOTAL_EXAMPLES = sum([len(data_cepac[i]) for i in data_cepac])
 cepac_output, rnn_output = np.zeros((TOTAL_EXAMPLES, SEQ_LEN, OUTPUT_DIM)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN, OUTPUT_DIM))
 cepac_input, rnn_input = [], []
-idx_example = -1
+#idx_example = -1
 for batch in data_cepac:
     if batch in IGNORE:
         continue
     cepac_input += pd.DataFrame(data_rnn[batch]['CEPAC_input']).values.tolist()
     rnn_input += data_rnn[batch]['RNN_source']
     for example in data_cepac[batch]:
-        idx_example += 1
+        idx_example = 1000 * int(batch) + example
         idx_feature = -1
         for feature in data_cepac[batch][example]:
             idx_feature += 1

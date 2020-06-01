@@ -292,3 +292,21 @@ def Insert_row_(row_number, df, row_value):
     # Return the updated dataframe 
     return df_result
 
+# when we import all the .out files, it is in form of dictionary.
+# this dictionary is sorted in weird way if we use sort(). This results in 
+# mismatch of X-Y. Following function sorts the output dictionary according to the 
+# digit in the key 
+def sort_output_dict(dict_in):
+    dict_out = {}
+    for file in dict_in:
+        _, key = file.split('_')
+        key = int(key)
+        dict_out[key] = dict_in[file]
+    
+    # sort
+    #dict_out = sorted(dict_out)
+    
+    return dict_out
+    
+
+
