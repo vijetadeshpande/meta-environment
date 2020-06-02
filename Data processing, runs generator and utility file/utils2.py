@@ -10,6 +10,7 @@ import scipy as sp
 from copy import deepcopy
 import os
 import numpy as np
+import torch
 import utils
 import _pickle as pickle
 import json
@@ -18,7 +19,7 @@ from sklearn.model_selection import train_test_split
 import random
 
 # build state of the system
-def build_state(input_signal, example):
+def build_state(input_signal, sample_bounds, DEVICE):
     
     # import distribution parameters (required for z-score calculations)
     #parameters = utils.load_json(r'input_bounds.json')
@@ -35,8 +36,9 @@ def build_state(input_signal, example):
     # 9. 'PrEPShape'
     
     # the input signal to the RNN model right now is of shape [1, 60, 6] for one example
-    EXAMPLES, SRC_LEN, INPUT_DIM = 1, 60, 6
-    system_state = np.zeros((EXAMPLES, SRC_LEN, INPUT_DIM))
+    FEATURE_VEC = utils.get_feature_vector()
+    EXAMPLES, SRC_LEN, INPUT_DIM = 1, 60, len(FEATURE_VEC)
+    system_state = pd.DataFrame(0, index = np.arange(SRC_LEN), columns = FEATURE_VEC)
     
     # the system state should have following features in mentioned order
     # 1. Enable incidence reduction? this should always be zero while calculating community benefit
@@ -45,33 +47,49 @@ def build_state(input_signal, example):
     # 4. Enable PrEP?
     # 5. Weibull uptake probabilities
     # 6. HIV incidence while on PrEP
-    features = ['UseHIVIncidReduction', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPEnable', 'Weibull', 'PrepIncidMale']
     
     # iterate over the features
-    first_visit = True
-    feature_idx = -1
-    for feature in features:
-        feature_idx += 1
-        if feature in ['HIVmthIncidMale', 'PrepIncidMale']:
-            if first_visit:
-                # update first visit
-                first_visit = False
-                
-                # get incidence sequence
-                inci = utils.get_incidence_sequence(input_signal, example, SRC_LEN)
-                factor = 1 - np.multiply(0.739, 0.96)
-                inci_prep = np.multiply(factor, inci)
-                
-                # set values
-                system_state[:, :, feature_idx] = inci
-                system_state[:, :, 5] = inci_prep
-            else:
-                continue
-        elif feature == 'Weibull':
-            system_state[:, :, feature_idx] = utils.weibull_tp(input_signal['PrEPCoverage'][example], input_signal['PrEPDuration'][example], input_signal['PrEPShape'][example], SRC_LEN)
-        else:
-            system_state[:, :, feature_idx] = input_signal[feature][example] 
-                
+    for var in FEATURE_VEC:
+        
+        # switch like features (or the features which will have same value for SEQ_LEN)
+        if var in ['UseHIVIncidReduction', 'PrEPEnable', 'HIVIncidReductionCoefficient', 'DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionPropHRGAttrib', 'DynamicTransmissionNumHIVPosHRG', 'prevalence']:
+            val = utils.expand_input(input_signal[var], SRC_LEN)
+            if (var == 'HIVIncidReductionCoefficient'):
+                if (input_signal['HIVIncidReductionStopTime'] < SRC_LEN-1):
+                    # after reduction_stop_time, the factor changes to max value
+                    val[input_signal['HIVIncidReductionStopTime']:] = sample_bounds['HIVIncidReductionStopTime']['ub']
+                # calculate z-score of the val
+                val = utils.z_score(val, sample_bounds['HIVIncidReductionCoefficient']['mean'], sample_bounds['HIVIncidReductionCoefficient']['sd'])
+            elif var in ['DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionNumHIVPosHRG']:
+                # calculate z-score
+                val = utils.z_score(val, sample_bounds[var]['mean'], sample_bounds[var]['sd'])
+        
+            
+        # weibull uptake probabilities
+        elif var == 'PrEPCoverage':
+            target_uptake, target_time, shape = input_signal['PrEPCoverage'], input_signal['PrEPDuration'], input_signal['PrEPShape']
+            val = utils.weibull_tp(target_uptake, target_time, shape, SRC_LEN)
+        
+        # generating sequence of the incidence 
+        elif var == 'HIVmthIncidMale':
+            # calculate sequence of raw incidence
+            val = utils.get_incidence_sequence(input_signal, 0, SRC_LEN)
+            
+            # TODO: following line is hard coded (need to take reference for eff and adhe)
+            factor = 1 - np.multiply(0.96, 0.739)
+            
+            # calculate sequence of prep incidence
+            val_prep = np.multiply(factor, val)
+            system_state.loc[:, 'PrepIncidMale'] = val_prep
+            
+        elif var in ['PrepIncidMale', 'DynamicTransmissionNumHIVNegHRG']:
+            continue
+        
+        # store
+        system_state.loc[:, var] = val
+    
+    # convert to torch tensor
+    system_state = torch.tensor(system_state.values).type('torch.FloatTensor').to(DEVICE)
     
     
     return system_state 
@@ -79,7 +97,7 @@ def build_state(input_signal, example):
 def community_benefit(run_A, run_B):
     
     # few fixed parameters
-    EXAMPLES, TRG_LEN, OUT_DIM = run_A.shape
+    TRG_LEN, OUT_DIM = run_A.shape
     COHORT_SIZE = 10000000
     
     
@@ -95,16 +113,16 @@ def community_benefit(run_A, run_B):
     
     
     # calculate difference bet infection cases in SQ and INV
-    step_1 = np.sum(run_A[:, :, 0]) - np.sum(run_B[:, :, 0])
+    step_1 = np.sum(run_A[:, 0]) - np.sum(run_B[:, 0])
     # calculate average monthly incidence probability in SQ
-    step_2 = calculate_average_prob(np.sum(run_A[:, :, 1]))
+    step_2 = calculate_average_prob(np.sum(run_A[:, 1]))
     # calculate average monthly incidence prob in INV
-    step_3 = calculate_average_prob(np.sum(run_B[:, :, 1]) - step_1)
+    step_3 = calculate_average_prob(np.sum(run_B[:, 1]) - step_1)
     # difference in avg monthly prob
     step_4 = step_3 - step_2
     # monthly prob at time 't' for INV
-    inf_prob = np.divide(run_B[:, :, 1], run_B[:, :, 2])[TRG_LEN][0]
-    step_5 = np.multiply(inf_prob, np.divide((np.sum(run_A[:, :, 1]) - step_1), np.sum(run_A[:, :, 1])))
+    inf_prob = np.divide(run_B[:, 1], run_B[:, 2])[TRG_LEN-1]
+    step_5 = np.multiply(inf_prob, np.divide((np.sum(run_A[:, 1]) - step_1), np.sum(run_A[:, 1])))
     # percentage decrease in monthly probability at month t
     step_6 = np.divide((inf_prob - step_5), inf_prob)
     

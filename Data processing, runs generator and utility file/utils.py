@@ -78,7 +78,7 @@ def weibull_tp(coverage, target_time, shape, horizon):
     tp = 1 - np.exp(np.multiply(scale, np.power(t_step, shape, dtype = float)) - np.multiply(scale, np.power(t_next, shape, dtype = float)))
     
     # modify tp: after target time we don't enroll anyone in prep program
-    tp[target_time:] = 0
+    tp[int(target_time):] = 0
     scale1 = np.divide(target_time, (np.power((-np.log(1 - coverage)), (1/shape))))
     cdf_c = 1 - np.exp(-np.power(np.divide(t_step, scale1, dtype = float), shape, dtype = float))
     
@@ -153,13 +153,19 @@ def get_incidence_sequence(samples, example_n, SEQ_LEN):
     #incidence = gauss(np.arange(200), a0, b0, c0)
     
     # here we need incidence for each age
-    incidence = expand_incidence(samples['HIVmthIncidMale'][example_n], 200, 40)
+    try:
+        incidence = expand_incidence(samples['HIVmthIncidMale'][example_n], 200, 40)
+    except:
+        incidence = expand_incidence(samples['HIVmthIncidMale'], 200, 40)
     
     # incidence after 100 is 0
     incidence[101:] = 0
     
     # define truncnorm distribution and take samples from it for starting age
-    mean, sd = np.divide(samples['InitAge'][example_n][0], 12), np.divide(samples['InitAge'][example_n][1], 12)
+    try:
+        mean, sd = np.divide(samples['InitAge'][example_n][0], 12), np.divide(samples['InitAge'][example_n][1], 12)
+    except:
+        mean, sd = np.divide(samples['InitAge mean'], 12), np.divide(samples['InitAge sd'], 12)
     lb, ub = 16, 100
     a, b = (lb - mean)/sd, (ub - mean)/sd
     distribution = sp.stats.truncnorm(a, b, loc = mean, scale = sd)

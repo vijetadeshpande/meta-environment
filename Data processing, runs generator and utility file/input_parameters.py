@@ -242,4 +242,4 @@ def get_samples(sample_n):
 
 
 # try running this
-#sample_output = get_samples(100)
+_, bounds, _, _ = get_samples(1000)
