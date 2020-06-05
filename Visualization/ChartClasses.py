@@ -13,7 +13,7 @@ import seaborn as sns
 import os
 import numpy as np
 import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 import utils
 
 
@@ -27,6 +27,20 @@ def fill_values(df, time_array, y, feature, model, sample_array, start_idx, end_
     df.loc[start_idx:end_idx-1, 'Example number'] = sample_array
 
     return df
+
+def filename_to_key(filename):
+    
+    #
+    if 'GRU' in filename:
+        key = 'RNN with GRU'
+    elif 'LSTM' in filename:
+        key = 'RNN with LSTM'
+    elif ('Attention' in filename) or ('Attn' in filename) or ('attn' in filename):
+        key = 'Enc-Dec with attention'
+    else:
+        key = 'Enc-Dec without attention'
+        
+    return key
     
 
 class FeatureSequencePlot:
@@ -47,28 +61,13 @@ class FeatureSequencePlot:
         self.data = data
         
         # which test examples to plot
-        self.examples = np.arange(10, 20)
+        self.examples = np.arange(2, 5)
         
         # color pallete
         self.col_pal = sns.color_palette(palette)
         
         return
-    
-    def filename_to_key(self, filename):
-        
-        #
-        if 'GRU' in filename:
-            key = 'RNN with GRU'
-        elif 'LSTM' in filename:
-            key = 'RNN with LSTM'
-        elif 'wAttention' in filename:
-            key = 'Enc-Dec with attention'
-        elif 'woAttention' in filename:
-            key = 'Enc-Dec without attention'
-        else:
-            key = None
-            
-        return key
+
     
     def tensorize(self, data):
         
@@ -80,7 +79,7 @@ class FeatureSequencePlot:
                 continue
             y_hat, y = data[file][0], data[file][1]
             y_hat, y = np.array(y_hat)[1:, rand_ex, :], np.array(y)[1:, rand_ex, :]
-            data_out[self.filename_to_key(file)] = {'Regression': y_hat, 'CEPAC': y}
+            data_out[filename_to_key(file)] = {'Regression': y_hat, 'CEPAC': y}
         
         return data_out
     
@@ -167,13 +166,106 @@ class FeatureSequencePlot:
         aspect_r = 2
         line_alpha = 0.9
         
+        
+        # try plotting just one plot 
+        plt.figure()
+        g = sns.FacetGrid(data = df, 
+                         row = 'Example number',
+                         col = 'feature',
+                         sharex = False,
+                         sharey = False,
+                         aspect = aspect_r)#, hue="Coverage time")#, col_wrap=3)
+        g = (g.map(sns.lineplot, 
+                   "t (simulation month)", 
+                   'y',
+                   'Model',
+                   alpha = line_alpha).add_legend())#, "WellID")
+        
+        # title
+        plt.subplots_adjust(top=0.9)
+        g.fig.suptitle('Prediction from RNN models')
+        
+        # save
+        filename = os.path.join(self.savepath, r'Results from RNN models')
+        plt.savefig(filename, dpi = 720)
+        
+        """
         # 
         for example in range(len(self.examples)):
             for feature in ['trans.', 'infec.', 'sus.']:
                 float_df = df.loc[df.loc[:, 'feature'] == feature, :]
                 float_df = float_df.loc[float_df.loc[:, 'Example number'] == example, :]
                 self.plot_and_save(float_df, example, feature)
-                   
-
+        """
+        
+class ErrorPlot:
+    
+    def __init__(self, datapath, plot_title, savepath,
+                 palette = 'muted'):
+        
+        # set attributes
+        #self.x_title = x_title
+        #self.y_title = y_title
+        self.plot_title = plot_title
+        self.savepath = savepath
+        filename = os.path.join(savepath, plot_title)
+        self.filename = filename
+        
+        # read data
+        data = utils.load_all_csv(datapath)
+        self.data = self.reshape_data(data)
+        
+        # which test examples to plot
+        self.examples = np.arange(2, 5)
+        
+        # color pallete
+        self.col_pal = sns.color_palette(palette)
+        
+        return
+    
+    def reshape_data(self, data_in):
+        
+        files = list(data_in.keys())
+        N_FILES, N_EPOCHS, N_TRIALS = len(files), len(data_in[files[0]].index), len(data_in[files[0]].columns) - 2
+        ROWS = N_FILES * N_EPOCHS * N_TRIALS
+        data_out = pd.DataFrame(-1, index = np.arange(ROWS), columns = ['Epoch', 'Mean Squared Error', 'Trial', 'Model'])
+        error_columns = []
+        for i in list(data_in[files[0]].columns):
+            if 'Error' in i:
+                error_columns.append(i)
+        trial_array = np.ravel(np.repeat(np.reshape(np.arange(N_TRIALS), (N_TRIALS, 1)), N_EPOCHS, axis = 1), order = 'C')
+        
+        #
+        idx_row = 0
+        STEP = N_TRIALS * N_EPOCHS
+        for file in data_in:
+            data_out.loc[idx_row: idx_row + STEP - 1, 'Epoch'] = np.repeat(np.arange(N_EPOCHS), N_TRIALS)
+            data_out.loc[idx_row: idx_row + STEP - 1, 'Mean Squared Error'] = np.reshape(data_in[file].loc[:, error_columns].to_numpy(), (STEP,))
+            data_out.loc[idx_row: idx_row + STEP - 1, 'Trial'] = trial_array
+            data_out.loc[idx_row: idx_row + STEP - 1, 'Model'] = filename_to_key(file)
+            idx_row += STEP
+            
+        return data_out
+    
+    def plot_and_save(self):
+        
+        # get data
+        data = self.data
+        
+        # set plot encironment
+        sns.set_style("darkgrid", {"axes.facecolor": ".9"})
+        sns.set_context("notebook", rc={"lines.linewidth": 1.5}, font_scale = 1.2)
+        aspect_r = 2
+        line_alpha = 0.9
+        
+        # plot and save
+        plt.figure(figsize=(8, 6))
+        sns.lineplot(data = data,
+                     x = 'Epoch',
+                     y = 'Mean Squared Error',
+                     hue = 'Model',
+                     ci = 'sd')
+        plt.savefig(self.filename, dpi = 360)
+    
         
         

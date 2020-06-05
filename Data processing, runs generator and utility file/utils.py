@@ -15,6 +15,13 @@ import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import random
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
+import link_to_cepac_in_and_out_files as link
+import TextFileOperations as t_op
+import cluster_operations as c_op
+
+IGNORE_LIST = [r'.DS_Store']
 
 def dump_json(data, filename):
     with open(filename, 'w') as fp:
@@ -47,10 +54,31 @@ def load_all_json(dir_path):
     
     # iterate over files
     for filename in file_list:
+        if (filename in IGNORE_LIST) or ('.csv' in filename):
+            continue
         try:
             filepath = os.path.join(dir_path, filename)
             filename, _ = os.path.splitext(filename)
             data[filename] = load_json(filepath)
+        except:
+            continue
+    
+    return data
+
+def load_all_csv(dir_path):
+    
+    # list of files that we need to upload
+    file_list = os.listdir(dir_path)
+    data = {}
+    
+    # iterate over files
+    for filename in file_list:
+        if (filename in IGNORE_LIST) or ('.json' in filename):
+            continue
+        try:
+            filepath = os.path.join(dir_path, filename)
+            #filename, _ = os.path.splitext(filename)
+            data[filename] = pd.read_csv(filepath)
         except:
             continue
     
@@ -313,6 +341,86 @@ def sort_output_dict(dict_in):
     #dict_out = sorted(dict_out)
     
     return dict_out
+
+# new fuction to change the feature representioation
+def new_feature_representation(data_in, data_type = 'list'):
     
+    #
+    X, Y = np.array(data_in[0][0]), data_in[0][1]
+    
+    #
+    FEATURE_VEC = get_feature_vector()
+    EXAMPLES, SRC_LEN, INPUT_DIM = X.shape
+    INPUT_DIM_NEW = INPUT_DIM-2
+    
+    #
+    X_new = np.zeros((EXAMPLES, SRC_LEN, INPUT_DIM_NEW))
+    
+    #
+    idx, idx_new = -1, -1
+    for feature in FEATURE_VEC:
+        idx += 1
+        idx_new += 1
+        
+        if feature == 'PrEPEnable':
+            val = np.multiply(X[:, :, idx], X[:, :, idx+1])
+
+        elif feature == 'UseHIVIncidReduction':
+            val = np.multiply(X[:, :, idx], X[:, :, idx+1])
+            idx_mat = np.logical_and((X[:, :, idx+1] != 0), (val == 0))
+            val[idx_mat] = 1.4285714285714286
+            
+        elif feature in ['HIVIncidReductionCoefficient', 'PrEPCoverage']:
+            idx_new -= 1
+            continue
+        
+        else:
+            val = X[:, :, idx]
+        
+        #
+        X_new[:, :, idx_new] = val
+    
+    
+    #
+    if data_type == 'torch':
+        import torch
+        X_new = torch.tensor(X_new.tolist()).type('torch.FloatTensor')
+        Y = torch.tensor(Y).type('torch.FloatTensor')
+    else:
+        X_new = X_new.tolist()
+    
+    #
+    data_out = [[X_new, Y]]
+            
+            
+    return data_out
+    
+# function to convert a cepac '.in' file to a condensed representation of file
+def condense_in_file(in_file, var_list, var_loc = {}):
+    
+    condensed_file = pd.DataFrame(-10, index = [0], columns = var_list)
+    
+    # iterate over each variable
+    for var in var_list:
+        
+        # get value of variable
+        if not var in ['InitAge mean', 'InitAge sd', 'onART', 'prevalence']:
+            val = t_op.read_values(var, in_file, position = var_loc[var])
+        
+            # store value in dataframe
+            if var == 'InitAge':
+                condensed_file.loc[0, 'InitAge mean'] = val[0]
+                condensed_file.loc[0, 'InitAge sd'] = val[1]
+            elif var in ['HIVmthIncidMale', 'PrepIncidMale']:
+                val = val[0]
+                val = -1200 * np.log(1 - val)
+                condensed_file.loc[0, var] = val
+            elif var in ['PrEPCoverage', 'PrEPDuration', 'PrEPShape']:
+                val = val[0]
+                condensed_file.loc[0, var] = val
+            else:
+                condensed_file.loc[0, var] = val
+    
+    return condensed_file.values[0]
 
 

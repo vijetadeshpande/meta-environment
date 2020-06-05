@@ -7,6 +7,7 @@ Created on Sun May 24 03:14:14 2020
 """
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
+import utils
 import os
 import numpy as np
 import pandas as pd
@@ -26,7 +27,7 @@ TRG_LEN = 61
 # imports
 SQ_inputs = pd.read_csv('city_specific_inputs.csv')
 SQ_inputs = SQ_inputs.set_index('city')
-SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0.001, 60
+SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0.001, 0
 input_bounds = utils.load_json(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input/input_mean_and_sd.json')
 
 #%% STRATEGIES
@@ -54,10 +55,10 @@ for city in ['rio']:
         
         # replace PrEP values in sq
         INT_float = deepcopy(SQ_inputs)
-        INT_float[city, 'PrEPCoverage'], INT_float[city, 'PrEPDuration'], INT_float[city, 'PrEPShape'] = cov, cov_t, shape
+        INT_float.loc[city, 'PrEPCoverage'], INT_float.loc[city, 'PrEPDuration'], INT_float.loc[city, 'PrEPShape'] = cov, cov_t, shape
         
         # enable PrEP module
-        INT_float[city, 'PrEPEnable'] = 1
+        INT_float.loc[:, 'PrEPEnable'] = 1
         
         # convert set of inputs to feature matrix
         Run_B[idx_strategy, :, :] = utils2.build_state(INT_float.loc[city, :], input_bounds, DEVICE)
@@ -66,7 +67,7 @@ for city in ['rio']:
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/new-model.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/new_features.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 Environment = FGRU(filepath)
 
@@ -75,9 +76,9 @@ ALL_per_red = {}
 ALL_red_coe = {}
 
 # forward pass
-data = [(Run_A, Y)]
+data = utils.new_feature_representation([[Run_A, Y]], data_type = 'torch')
 SQ_ = Environment(data, z_path, DEVICE)
-data = [(Run_B, Y)]
+data = utils.new_feature_representation([[Run_B, Y]], data_type = 'torch')
 INT_ = Environment(data, z_path, DEVICE)
 
 # iterate over all possible values (should be 24)

@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 import random
 
 # build state of the system
-def build_state(input_signal, sample_bounds, DEVICE):
+def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torch'):
     
     # import distribution parameters (required for z-score calculations)
     #parameters = utils.load_json(r'input_bounds.json')
@@ -53,6 +53,12 @@ def build_state(input_signal, sample_bounds, DEVICE):
         
         # switch like features (or the features which will have same value for SEQ_LEN)
         if var in ['UseHIVIncidReduction', 'PrEPEnable', 'HIVIncidReductionCoefficient', 'DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionPropHRGAttrib', 'DynamicTransmissionNumHIVPosHRG', 'prevalence']:
+            
+            # following if loop is specially for old .in files
+            # where we did not save the prevalence value in the input dictionary
+            if var == 'prevalence' and input_signal[var] == -10:
+                input_signal[var] = input_signal['DynamicTransmissionNumHIVPosHRG']/(input_signal['DynamicTransmissionNumHIVPosHRG'] + input_signal['DynamicTransmissionNumHIVNegHRG'])
+            
             val = utils.expand_input(input_signal[var], SRC_LEN)
             if (var == 'HIVIncidReductionCoefficient'):
                 if (input_signal['HIVIncidReductionStopTime'] < SRC_LEN-1):
@@ -89,7 +95,10 @@ def build_state(input_signal, sample_bounds, DEVICE):
         system_state.loc[:, var] = val
     
     # convert to torch tensor
-    system_state = torch.tensor(system_state.values).type('torch.FloatTensor').to(DEVICE)
+    if output_type == 'torch':
+        system_state = torch.tensor(system_state.values).type('torch.FloatTensor').to(DEVICE)
+    else:
+        system_state = system_state.values.tolist()
     
     
     return system_state 

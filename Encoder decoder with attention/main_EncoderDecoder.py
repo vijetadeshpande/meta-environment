@@ -6,7 +6,7 @@ Created on Mon May  4 16:28:10 2020
 @author: vijetadeshpande
 """
 
-from ModelData import ModelData
+
 from Encoder import Encoder
 from Decoder import Decoder
 from Seq2Seq import Seq2Seq
@@ -23,22 +23,26 @@ import math
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpanlde/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 import utils
+from ModelData import ModelData
 import seaborn as sns
 from copy import deepcopy
+import pandas as pd
+import numpy as np
+
 
 # path variables
 datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
 respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # create data object
-data_object = ModelData(datapath, batch_size = 128)
+data_object = ModelData(datapath, batch_size = 64)
 data_train, data_test = data_object.train_examples, data_object.test_examples
 
 # parameters for defining encoder and decoder
 INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
-ENC_HID_DIM = 64
-DEC_HID_DIM = 64
-N_LAYERS = 1
+ENC_HID_DIM = 512
+DEC_HID_DIM = 512
+N_LAYERS = 2
 ENC_DROPOUT = 0.5
 DEC_DROPOUT = 0.5
 DEVICE = 'cpu'
@@ -68,7 +72,7 @@ optimizer = optim.Adam(model.parameters())
 criterion = nn.MSELoss() #nn.SmoothL1Loss()
 
 # training parameters
-N_EPOCHS = 20
+N_EPOCHS = 10
 CLIP = 1
 best_valid_loss = float('inf')
 
@@ -80,6 +84,7 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 # start training without attention
+train_losses = []
 for epoch in range(N_EPOCHS):
     
     # WITHOUT ATTENTION
@@ -103,6 +108,9 @@ for epoch in range(N_EPOCHS):
     print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
     print(f'\tTrain Loss: {train_loss:.4f} | Train PPL: {math.exp(train_loss):7.4f}')
     print(f'\t Val. Loss: {valid_loss:.4f} |  Val. PPL: {math.exp(valid_loss):7.4f}')
+    
+    # store loss value
+    train_losses.append(train_loss)
 
 # shuffle the dataset and calculate error on training set again
 data_train_s = utils.tensor_shuffler(data_train, DEVICE)
@@ -131,6 +139,11 @@ print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
 attention_w = deepcopy(prediction['attention weights'])
 aaa = attention_w[0].detach().numpy()
 sns.heatmap(aaa[0, 1:, :])
+
+# save df for lineplot
+plot_df = pd.DataFrame(train_losses, columns = ['Mean Squared Error'])
+plot_df['Epoch'] = np.arange(len(plot_df))
+plot_df.to_csv(os.path.join(respath, 'RNN ENC-DEC_Error plot.csv'))
 
 #x = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/test check/results'
 #link.export_output_to_excel(x, x)

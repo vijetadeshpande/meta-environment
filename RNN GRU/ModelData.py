@@ -46,6 +46,10 @@ class ModelData():
         data_train = utils.load_json(os.path.join(data_dir, 'train.json'))
         data_test = utils.load_json(os.path.join(data_dir, 'test.json'))
         
+        # using new feature representation
+        data_train = utils.new_feature_representation(data_train)
+        data_test = utils.new_feature_representation(data_test)
+        
         # STEP - 2: create numpy array of required shape and convert them into torch tensors
         X_train, Y_train = torch.FloatTensor(np.array(data_train[0][0])), torch.FloatTensor(np.array(data_train[0][1]))
         X_test, Y_test = torch.FloatTensor(np.array(data_test[0][0])), torch.FloatTensor(np.array(data_test[0][1]))
@@ -95,5 +99,8 @@ class ModelData():
     def trn_y(self): return self.trn_ds.y
     @property
     def val_y(self): return self.val_ds.y
+    
+        
+        
     
 

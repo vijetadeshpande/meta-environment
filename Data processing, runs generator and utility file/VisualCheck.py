@@ -18,7 +18,7 @@ import utils
 
 def get_observations(pair_data, key, filter_labels):
     
-    X, Y = pd.DataFrame(data[key][0][0]).iloc[filter_labels, :], pd.DataFrame(data[key][0][1]).iloc[filter_labels, :]
+    X, Y = pd.DataFrame(data[key][0][0]).iloc[filter_labels, :], pd.DataFrame(data[key][0][1]).iloc[filter_labels, :].iloc[:, 1:]
     
     return X, Y
 
@@ -34,7 +34,7 @@ test_labels = labels.loc[0:9, 'test'].values
 # filter out required data
 X_test, Y_test = {}, {}
 for key in data:
-    if key == 'train':
+    if key in ['train', 'input_mean_and_sd']:
         continue
     
     if key == 'test':
@@ -44,13 +44,13 @@ for key in data:
     X_test[key], Y_test[key] = get_observations(data, key, label_list)
 
 # collect output
-FEATURES, SEQ_LEN, N_FILES, N_EXAMPLES = 3, 60, len(X_test), len(test_labels)
-total_rows = SEQ_LEN * N_FILES * N_EXAMPLES
+FEATURES, SRC_LEN, N_FILES, N_EXAMPLES, TRG_LEN = len(Y_test['test'].iloc[0, 0]), X_test['test'].shape[1], len(Y_test), len(test_labels), Y_test['test'].shape[1]
+total_rows = TRG_LEN * N_FILES * N_EXAMPLES
 test_df = pd.DataFrame(-100, index = np.arange(total_rows), columns = ['t (simulation month)', 'transmissions', 'infections', 'susceptibles', 'files', 'example'])
 idx = 0
 for file in Y_test:
-    float_array = np.reshape(np.array(Y_test[file].to_numpy().tolist()), (N_EXAMPLES*SEQ_LEN, FEATURES))
-    start_idx, end_idx = idx, idx+(N_EXAMPLES*SEQ_LEN)
+    float_array = np.reshape(np.array(Y_test[file].to_numpy().tolist()), (N_EXAMPLES*TRG_LEN, FEATURES))
+    start_idx, end_idx = idx, idx+(N_EXAMPLES*TRG_LEN)
     
     # feature values
     test_df.loc[start_idx: end_idx-1, ['transmissions', 'infections', 'susceptibles']] = float_array
@@ -59,13 +59,13 @@ for file in Y_test:
     test_df.loc[start_idx: end_idx-1, 'file'] = file
     
     # example
-    test_df.loc[start_idx: end_idx-1, 'example'] = np.reshape(np.array([[i] * SEQ_LEN for i in test_labels]), (N_EXAMPLES*SEQ_LEN, 1))
+    test_df.loc[start_idx: end_idx-1, 'example'] = np.reshape(np.array([[i] * TRG_LEN for i in test_labels]), (N_EXAMPLES*TRG_LEN, 1))
     
     # simulation time
-    test_df.loc[start_idx: end_idx-1, 't (simulation month)'] = [i for i in range(SEQ_LEN)] * N_EXAMPLES
+    test_df.loc[start_idx: end_idx-1, 't (simulation month)'] = [i for i in range(TRG_LEN)] * N_EXAMPLES
     
     # update idx
-    idx = idx+(N_EXAMPLES*SEQ_LEN)
+    idx = idx+(N_EXAMPLES*TRG_LEN)
 
 
 # save plots
@@ -102,7 +102,7 @@ for example in test_labels:
         g = (g.map(sns.lineplot, 
                    "t (simulation month)", 
                    feature, 
-                   alpha = line_alpha))#, "WellID")
+                   alpha = line_alpha).add_legend())#, "WellID")
         
         # title
         plt.subplots_adjust(top=0.9)

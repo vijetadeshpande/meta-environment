@@ -19,6 +19,7 @@ from copy import deepcopy
 import timeit
 import input_parameters as ipar
 import utils
+import utils2
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
 import link_to_cepac_in_and_out_files as link
@@ -36,7 +37,7 @@ y_data = np.transpose(y_data, axes = [1,2,0])
 # 1. get list of directories which have the raw data 
 # 2. import all data (if there's no compressed file, else import compressed data)
 # 3. save the data (for each directory and all data combined)
-PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
+PATH_RAW = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'#r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS'
 IGNORE = [r'.DS_Store', r'CURRENT BATCH OF CEPAC RUNS', r'10 correct SQ runs', 'regression model input', 'NEW BATCH_1', 'NEW BATCH_2']#, 'NEW BATCH', 'this']
 SEQ_LEN, INPUT_DIM, OUTPUT_DIM = 60, 10, 3
 batch_list = os.listdir(PATH_RAW)
@@ -94,28 +95,105 @@ for batch in batch_list:
         else:
             data_cepac[batch] = data_rnn[batch].pop('CEPAC_output')
             
-
-# coverting keys from str to int 
+# coverting keys from str to int
 for batch in data_cepac:
     data_cepac[batch] = utils.sort_output_dict(data_cepac[batch])
 
 # now we need all the data in 'data_cepac' in one place to calculate mean, sd anf standardize the output data from it
 TOTAL_EXAMPLES = sum([len(data_cepac[i]) for i in data_cepac])
-cepac_output, rnn_output = np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM))
-cepac_input, rnn_input = [], []
+VARIABLES = len(data_rnn[batch]['CEPAC_input'])
+cepac_input, cepac_output =  np.zeros((TOTAL_EXAMPLES, VARIABLES)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM))
+rnn_input, rnn_output = np.zeros((TOTAL_EXAMPLES, SEQ_LEN, INPUT_DIM)), np.zeros((TOTAL_EXAMPLES, SEQ_LEN+1, OUTPUT_DIM))
+
 #idx_example = -1
 for batch in data_cepac:
+    #
     if batch in IGNORE:
         continue
-    cepac_input += pd.DataFrame(data_rnn[batch]['CEPAC_input']).values.tolist()
-    rnn_input += data_rnn[batch]['RNN_source']
-    for example in data_cepac[batch]:
-        idx_example = 1000 * int(batch) + example
-        idx_feature = -1
-        for feature in data_cepac[batch][example]:
-            idx_feature += 1
-            cepac_output[idx_example, 1:, idx_feature] = data_cepac[batch][example][feature]
+    
+    # what is batch length
+    # TODO: following two lines works on the assumption that the batch size
+    # is constant, always. And is equal to 1000
+    BATCH_SIZE = pd.DataFrame(data_rnn[batch]['CEPAC_input']).shape[0]
+    START_INDEX, END_INDEX = int(batch)*1000, int(batch)*1000 + BATCH_SIZE
+    
+    # check if we have cepac input tensor and collect 
+    if not 'CEPAC_input' in data_rnn[batch]:
+        # get list of variables and dictionary to store values 
+        samples, sample_bounds, var_list, parameters = ipar.get_samples(1)
         
+        #
+        cepac_batch_input = pd.DataFrame(-10, index = np.arange(len(data_cepac[batch])), columns = var_list)
+        
+        # read all cepac .in files
+        CEPAC_input_files = link.import_all_cepac_in_files(os.path.join(PATH_RAW, batch, 'Files for CEPAC'))
+        
+        # save location of each variable
+        var_loc = {}
+        for file in CEPAC_input_files:
+            for var in var_list:
+                if not var in var_loc:
+                    try:
+                        loc = t_op.search_var(var, CEPAC_input_files[file])
+                    except:
+                        loc = {}
+                    # store location of the variable
+                    var_loc[var] = loc
+            break
+        
+        # store value of each sample
+        for file in CEPAC_input_files:
+            _, idx_file = file.split('_')
+            idx_file = int(idx_file) #+ (int(batch)*1000 - 5000)
+            cepac_batch_input.iloc[idx_file, :] = utils.condense_in_file(CEPAC_input_files[file], var_list, var_loc)
+    
+        # add to cepac_input
+        cepac_input[START_INDEX:END_INDEX, :, :] = cepac_batch_input.values#.tolist()
+        
+        # save condensed cepac input files
+        cepac_batch_input = cepac_batch_input.to_dict()
+        utils.dump_json(cepac_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'CEPAC_input.json'))
+        
+        # store
+        data_rnn[batch]['CEPAC_input'] = cepac_batch_input
+        
+    else:
+        cepac_input[START_INDEX:END_INDEX, :] = pd.DataFrame(data_rnn[batch]['CEPAC_input']).values#.tolist()
+    
+    
+    # check if we have RNN input tensor and collect
+    if not 'RNN_source' in data_rnn[batch]:
+        
+        # define condensed input and input bounds (required for standardization)
+        cepac_batch_input = pd.DataFrame(data_rnn[batch]['CEPAC_input'])
+        input_bounds = utils.load_json('input_bounds.json')
+        
+        rnn_batch_input = []
+        for file in cepac_batch_input.index:
+            x = utils2.build_state(cepac_batch_input.loc[file, :], input_bounds, output_type = 'list')
+            rnn_batch_input.append(x)
+        
+        # store
+        data_rnn[batch]['RNN_source'] = rnn_batch_input
+        
+        # save
+        utils.dump_json(rnn_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'RNN_source.json'))
+        
+        # collect
+        rnn_input[START_INDEX:END_INDEX, :, :] = data_rnn[batch]['RNN_source']
+        
+    else:
+        # collect
+        rnn_input[START_INDEX:END_INDEX, :, :] = np.array(data_rnn[batch]['RNN_source'])
+        
+        
+    # get CEPAC output and collect
+    cepac_batch_output = np.zeros((len(data_cepac[batch]), SEQ_LEN+1, OUTPUT_DIM))
+    for example in data_cepac[batch]:
+        idx_example = example #(1000 * int(batch)) + example
+        cepac_batch_output[idx_example, 1:, :] = pd.DataFrame(data_cepac[batch][example])
+    cepac_output[START_INDEX:END_INDEX, :, :] = cepac_batch_output#.tolist()
+    
 # calculate mean and std of output values
 mean, std = np.zeros((OUTPUT_DIM)), np.zeros((OUTPUT_DIM))
 for feature in range(OUTPUT_DIM):
@@ -128,7 +206,9 @@ for feature in range(OUTPUT_DIM):
     
 
 # few adjustments
+rnn_input, cepac_input = rnn_input.tolist(), cepac_input.tolist()
 rnn_output, cepac_output = rnn_output.tolist(), cepac_output.tolist()
+
 
 # convert into pandas dataframe
 X, Y = pd.DataFrame(rnn_input, index = np.arange(TOTAL_EXAMPLES)), pd.DataFrame(rnn_output, index = np.arange(TOTAL_EXAMPLES))

@@ -7,7 +7,7 @@ Created on Mon Mar 16 20:47:35 2020
 """
 import torch
 import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 import utils
 import pandas as pd
 import os
