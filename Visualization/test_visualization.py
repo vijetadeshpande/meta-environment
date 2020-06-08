@@ -14,17 +14,17 @@ from ChartClasses import ErrorPlot as EPlot
 
 
 # save plots for the predicted values
-readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/2'
+readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/3'
 plotsavepath = os.path.join(readdata, 'plots3')
 if not os.path.exists(plotsavepath):
     os.makedirs(plotsavepath)
 
 # line plot for de-normalized predicted output (compared with CEPAC)
-#lineplot_object = PredictPlot(datapath = readdata, 
-#                              plot_title = 'Feature wise fit', 
-#                              savepath = plotsavepath)
+lineplot_object = PredictPlot(datapath = readdata, 
+                              plot_title = 'Feature wise fit', 
+                              savepath = plotsavepath)
 
-#lineplot_object.save_results()
+lineplot_object.save_results()
 
 
 # error plot
