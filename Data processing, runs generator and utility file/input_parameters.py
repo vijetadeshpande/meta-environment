@@ -135,7 +135,7 @@ def get_samples(sample_n):
         # infection related parameters
         elif var == 'UseHIVIncidReduction':
             sample_bounds[var] = {'lb': 0, 'ub': 1,
-                                 'p': 0.8}
+                                 'p': 1}
         elif var ==  'HIVIncidReductionStopTime':
             sample_bounds[var] = {'lb': horizon, 'ub': horizon}
         elif var == 'HIVIncidReductionCoefficient':
@@ -146,7 +146,7 @@ def get_samples(sample_n):
                                  'mean': 3, 'sd': 1.5}
         elif var == 'PrEPEnable':
             sample_bounds[var] = {'lb': 0, 'ub': 1,
-                                 'p': 0.8}
+                                 'p': 1}
         elif var == 'PrEPCoverage':
             sample_bounds[var] = {'lb': 0, 'ub': 0.80,
                                  'mean': 0.30, 'sd': 0.20}
@@ -242,4 +242,4 @@ def get_samples(sample_n):
 
 
 # try running this
-_, bounds, _, _ = get_samples(1000)
+#_, bounds, _, _ = get_samples(1000)

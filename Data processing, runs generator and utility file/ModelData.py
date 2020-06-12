@@ -10,10 +10,11 @@ from torchtext import data
 import torch
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
-import utils
+import HelperFunctions1 as h_fun1
 import os
 import numpy as np
 import torch
+import pickle
 
 """Encapsulates DataLoaders and Datasets for training, validation, test. 
 Base class for fastai *Data classes."""
@@ -43,12 +44,26 @@ class ModelData():
         # 4. Create batches of examples
         
         # STEP - 1: read data
-        data_train = utils.load_json(os.path.join(data_dir, 'train.json'))
-        data_test = utils.load_json(os.path.join(data_dir, 'test.json'))
+        try:
+            data_train = h_fun1.load_json(os.path.join(data_dir, 'train.json'))
+            data_test = h_fun1.load_json(os.path.join(data_dir, 'test.json'))
+        except:
+            try:
+                infile = open(os.path.join(data_dir, 'train.pkl'), 'rb')
+                data_train = pickle.load(infile)
+                infile = open(os.path.join(data_dir, 'test.pkl'), 'rb')
+                data_test = pickle.load(infile)
+            except:
+                try:
+                    data_train = np.load(os.path.join(data_dir, 'train.npy'), allow_pickle = True).tolist()
+                    data_test = np.load(os.path.join(data_dir, 'test.npy'), allow_pickle = True).tolist()
+                except:
+                    print('\nNO DATA FILE FOUND')
+                    return
         
         # using new feature representation
-        data_train = utils.new_feature_representation(data_train)
-        data_test = utils.new_feature_representation(data_test)
+        data_train = h_fun1.new_feature_representation(data_train)
+        data_test = h_fun1.new_feature_representation(data_test)
         
         # STEP - 2: create numpy array of required shape and convert them into torch tensors
         X_train, Y_train = torch.FloatTensor(np.array(data_train[0][0])), torch.FloatTensor(np.array(data_train[0][1]))
