@@ -8,7 +8,7 @@ Created on Fri Jun 12 01:44:08 2020
 
 from CombinationModel import Model
 from CombinationTrain import train
-#from CombinationEvaluate import evaluate
+from CombinationEvaluate import evaluate
 import time
 import torch
 import torch.nn as nn
@@ -67,12 +67,12 @@ def init_training(data_object, par_dict, datapath, respath):
     model = model.to(DEVICE)
 
     # initialize values of learnable parameters
-    #def init_weights(m):
-    #    for name, param in m.named_parameters():
-    #        nn.init.uniform_(param.data, -0.08, 0.08)
-    #model.apply(init_weights)
+    def init_weights(m):
+        for name, param in m.named_parameters():
+            nn.init.uniform_(param.data, -0.08, 0.08)
+    model.apply(init_weights)
     #
-    model.load_state_dict(torch.load('tut1-model1.pt'))
+    #model.load_state_dict(torch.load('tut1-model1.pt'))
     
 
     # count parameters
@@ -82,7 +82,7 @@ def init_training(data_object, par_dict, datapath, respath):
 
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 7, gamma = 0.7)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 10, gamma = 0.7)
 
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -119,7 +119,7 @@ def init_training(data_object, par_dict, datapath, respath):
         # loss here by predicting the value of validation set 'x's
         valid_loss = 0
         # update validation loss if less than previously observed minimum
-        if valid_loss <= best_valid_loss:
+        if epoch == (N_EPOCHS-1): #valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
             torch.save(model.state_dict(), 'tut1-model2.pt')        
 
@@ -144,15 +144,15 @@ def init_training(data_object, par_dict, datapath, respath):
     ## shuffle the dataset and calculate error on training set again
     data_train_s = h_fun1.tensor_shuffler(data_train, DEVICE)
     start_time = time.time()
-    #prediction_train_s = evaluate(model, data_train_s, criterion, DEVICE, datapath)
-    tt_loss_s = 0#prediction_train_s['average epoch loss']
+    prediction_train_s = evaluate(model, data_train_s, criterion, DEVICE, datapath)
+    tt_loss_s = prediction_train_s['average epoch loss']
     end_time = time.time()
     pred_mins, pred_secs = epoch_time(start_time, end_time)
 
     # testing/prediction
     #model.load_state_dict(torch.load('tut1-model.pt'))
-    #prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
-    test_loss = 0#prediction['average epoch loss']
+    prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
+    test_loss = prediction['average epoch loss']
 
     # save predicted values
     #filename = os.path.join(respath, 'LSTM_RNN_test_result_samples.json')

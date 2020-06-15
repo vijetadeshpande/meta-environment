@@ -26,11 +26,12 @@ data_object = ModelData(datapath, batch_size = 128)
 
 # Grid for hyper-par search
 hidden_dims = [128]
-n_layers = [2]
-l_rates = [0.002]#[0.01, 0.001, 0.00001]#np.power(10, np.random.normal(loc=-3.5, scale=0.7, size=10))
-n_epochs = [10]
-n_heads = [8]
-dropouts = [0.01]
+n_layers = [1]
+l_rates = [0.003]#[0.01, 0.001, 0.00001]#np.power(10, np.random.normal(loc=-3.5, scale=0.7, size=10))
+n_epochs = [5]
+n_heads = [4]
+dropouts = [0.5]
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #
 pars = list(itertools.product(hidden_dims, n_layers, dropouts, l_rates, n_epochs, n_heads))
@@ -50,7 +51,7 @@ for par in pars:
                 'learning rate': l_rate,
                 'number of epochs': n_epoch,
                 'number of heads': n_head,
-                'device': 'cpu'
+                'device': DEVICE
                 }
     
     # train with current set of paramters
