@@ -33,6 +33,7 @@ class PositionalEncoding(nn.Module):
         #
         pe = self.pe[:x.size(0), :, :].repeat(1, x.size(1), 1)
         x = torch.cat((x, pe), -1)
+        #x += pe
         
         return self.dropout(x)
     

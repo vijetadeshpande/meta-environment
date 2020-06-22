@@ -197,7 +197,7 @@ def get_incidence_sequence(samples, example_n, SEQ_LEN):
     lb, ub = 16, 100
     a, b = (lb - mean)/sd, (ub - mean)/sd
     distribution = sp.stats.truncnorm(a, b, loc = mean, scale = sd)
-    age_samples = distribution.rvs(1000).astype(int)
+    age_samples = distribution.rvs(10000).astype(int)
     
     # loop over samples and calculate mean incidence
     approximation = np.zeros(SEQ_LEN)

@@ -10,7 +10,7 @@ import torch.nn as nn
 from numpy import random
 
 
-class GRU(nn.Module):
+class Model(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False, teacher_forcing_ratio = 0.5):
         super().__init__()
         

@@ -5,9 +5,6 @@ Created on Sun May 24 03:14:14 2020
 
 @author: vijetadeshpande
 """
-import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
-import utils
 import os
 import numpy as np
 import pandas as pd
@@ -15,8 +12,11 @@ from copy import deepcopy
 import itertools
 import torch
 from FunctionApproximator import GRUApproximator as FGRU
-import utils2
-import utils
+from FunctionApproximator import TransformerApproximator as FTrans
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
+import HelperFunctions2 as h_fun2
+import HelperFunctions1 as h_fun1
 
 #%% SOME PAR
 
@@ -27,8 +27,8 @@ TRG_LEN = 61
 # imports
 SQ_inputs = pd.read_csv('city_specific_inputs.csv')
 SQ_inputs = SQ_inputs.set_index('city')
-SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0.001, 0
-input_bounds = utils.load_json(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input/input_mean_and_sd.json')
+SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0.0001, 0
+input_bounds = h_fun1.load_json(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input/input_mean_and_sd.json')
 
 #%% STRATEGIES
 
@@ -39,11 +39,12 @@ uptake_s = [2]
 
 # create dictionary of input parameters necessary to create an input signal
 strategies = list(itertools.product(uptake, uptake_t, uptake_s))
-FEATURE_VEC = utils.get_feature_vector()
-EXAMPLES, SRC_LEN, INPUT_DIM, OUTPUT_DIM, DEVICE = len(strategies), 60, len(FEATURE_VEC), 3, 'cpu'
+FEATURE_VEC = h_fun1.get_feature_vector()
+EXAMPLES, SRC_LEN, INPUT_DIM, OUTPUT_DIM = len(strategies), 60, len(FEATURE_VEC), 3
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # initialize 
-Run_A = utils2.build_state(SQ_inputs.loc['rio', :], input_bounds, DEVICE).repeat(EXAMPLES, 1, 1)
+Run_A = h_fun2.build_state(SQ_inputs.loc['rio', :], input_bounds, DEVICE).repeat(EXAMPLES, 1, 1)
 Run_B = torch.zeros((EXAMPLES, SRC_LEN, INPUT_DIM)).type('torch.FloatTensor').to(DEVICE)
 Y = torch.zeros((EXAMPLES, SRC_LEN+1, OUTPUT_DIM)).type('torch.FloatTensor').to(DEVICE)
 
@@ -61,31 +62,31 @@ for city in ['rio']:
         INT_float.loc[:, 'PrEPEnable'] = 1
         
         # convert set of inputs to feature matrix
-        Run_B[idx_strategy, :, :] = utils2.build_state(INT_float.loc[city, :], input_bounds, DEVICE)
+        Run_B[idx_strategy, :, :] = h_fun2.build_state(INT_float.loc[city, :], input_bounds, DEVICE)
 
 
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU/best results/new_features.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/Transformer_02.pt' #r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/GRULatest.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
-Environment = FGRU(filepath)
+Environment = FTrans(filepath)
 
 # dictionary for storage
 ALL_per_red = {}
 ALL_red_coe = {}
 
 # forward pass
-data = utils.new_feature_representation([[Run_A, Y]], data_type = 'torch')
+data = h_fun1.new_feature_representation([[Run_A, Y]], data_type = 'torch')
 SQ_ = Environment(data, z_path, DEVICE)
-data = utils.new_feature_representation([[Run_B, Y]], data_type = 'torch')
+data = h_fun1.new_feature_representation([[Run_B, Y]], data_type = 'torch')
 INT_ = Environment(data, z_path, DEVICE)
 
 # iterate over all possible values (should be 24)
 for strategy in range(0, len(strategies)):
     
     # TX algo
-    percentage_reduction, reduction_coeff = utils2.community_benefit(SQ_['denormalized prediction'][0][:, strategy, :], INT_['denormalized prediction'][0][:, strategy, :])
+    percentage_reduction, reduction_coeff = h_fun2.community_benefit(SQ_['denormalized prediction'][0][:, strategy, :], INT_['denormalized prediction'][0][:, strategy, :])
     
     # save community benefit
     key = str(strategies[strategy])

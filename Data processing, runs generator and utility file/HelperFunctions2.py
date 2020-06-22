@@ -11,7 +11,7 @@ from copy import deepcopy
 import os
 import numpy as np
 import torch
-import utils
+import HelperFunctions1 as h_fun1
 import _pickle as pickle
 import json
 import pandas as pd
@@ -22,7 +22,7 @@ import random
 def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torch'):
     
     # import distribution parameters (required for z-score calculations)
-    #parameters = utils.load_json(r'input_bounds.json')
+    #parameters = h_fun1.load_json(r'input_bounds.json')
     
     # input signal should be a dictionary and must have following keys
     # 1. 'InitAge', 
@@ -36,7 +36,7 @@ def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torc
     # 9. 'PrEPShape'
     
     # the input signal to the RNN model right now is of shape [1, 60, 6] for one example
-    FEATURE_VEC = utils.get_feature_vector()
+    FEATURE_VEC = h_fun1.get_feature_vector()
     EXAMPLES, SRC_LEN, INPUT_DIM = 1, 60, len(FEATURE_VEC)
     system_state = pd.DataFrame(0, index = np.arange(SRC_LEN), columns = FEATURE_VEC)
     
@@ -59,27 +59,27 @@ def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torc
             if var == 'prevalence' and input_signal[var] == -10:
                 input_signal[var] = input_signal['DynamicTransmissionNumHIVPosHRG']/(input_signal['DynamicTransmissionNumHIVPosHRG'] + input_signal['DynamicTransmissionNumHIVNegHRG'])
             
-            val = utils.expand_input(input_signal[var], SRC_LEN)
+            val = h_fun1.expand_input(input_signal[var], SRC_LEN)
             if (var == 'HIVIncidReductionCoefficient'):
                 if (input_signal['HIVIncidReductionStopTime'] < SRC_LEN-1):
                     # after reduction_stop_time, the factor changes to max value
                     val[input_signal['HIVIncidReductionStopTime']:] = sample_bounds['HIVIncidReductionStopTime']['ub']
                 # calculate z-score of the val
-                val = utils.z_score(val, sample_bounds['HIVIncidReductionCoefficient']['mean'], sample_bounds['HIVIncidReductionCoefficient']['sd'])
+                val = h_fun1.z_score(val, sample_bounds['HIVIncidReductionCoefficient']['mean'], sample_bounds['HIVIncidReductionCoefficient']['sd'])
             elif var in ['DynamicTransmissionNumTransmissionsHRG', 'DynamicTransmissionNumHIVPosHRG']:
                 # calculate z-score
-                val = utils.z_score(val, sample_bounds[var]['mean'], sample_bounds[var]['sd'])
+                val = h_fun1.z_score(val, sample_bounds[var]['mean'], sample_bounds[var]['sd'])
         
             
         # weibull uptake probabilities
         elif var == 'PrEPCoverage':
             target_uptake, target_time, shape = input_signal['PrEPCoverage'], input_signal['PrEPDuration'], input_signal['PrEPShape']
-            val = utils.weibull_tp(target_uptake, target_time, shape, SRC_LEN)
+            val = h_fun1.weibull_tp(target_uptake, target_time, shape, SRC_LEN)
         
         # generating sequence of the incidence 
         elif var == 'HIVmthIncidMale':
             # calculate sequence of raw incidence
-            val = utils.get_incidence_sequence(input_signal, 0, SRC_LEN)
+            val = h_fun1.get_incidence_sequence(input_signal, 0, SRC_LEN)
             
             # TODO: following line is hard coded (need to take reference for eff and adhe)
             factor = 1 - np.multiply(0.96, 0.739)
@@ -104,6 +104,11 @@ def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torc
     return system_state 
 
 def community_benefit(run_A, run_B):
+    
+    #
+    if isinstance(run_A, torch.Tensor):
+        run_A = deepcopy(run_A).numpy()
+        run_B = deepcopy(run_B).numpy()
     
     # few fixed parameters
     TRG_LEN, OUT_DIM = run_A.shape

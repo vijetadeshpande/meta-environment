@@ -9,13 +9,14 @@ Created on Sun Jun  7 10:02:15 2020
 import torch
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
-import utils
+import HelperFunctions1 as h_fun1
 import pandas as pd
 import os
 from copy import deepcopy
+from numpy import random
 
 
-def evaluate(model, data, criterion, device, seqpath):
+def evaluate(model, data, criterion, device, seqpath, teacher_forcing_ratio = 0):
     
     # initialize
     model.eval()
@@ -46,8 +47,12 @@ def evaluate(model, data, criterion, device, seqpath):
             src = example[0].permute(1, 0, 2).to(device)
             trg = example[1].permute(1, 0, 2).to(device)
             
-            # predict output and append
-            output = model(src, trg)#, 0) # switch off teacher forcing
+            # evaluation in case of tranformer is recurrent, hence we'll have
+            # to iterate over the sequence length
+            SRC_LEN, BATCH_SIZE, SRC_DIM = src.shape
+            TRG_LEN, _, TRG_DIM = trg.shape
+            output = model(src, trg, module = 'test')
+            
             
             # store results
             _, CUR_LEN, _ = output.shape
@@ -56,11 +61,11 @@ def evaluate(model, data, criterion, device, seqpath):
             #attention_ws[idx, 0:CUR_SIZE, :, :] = attention_w[:, 1:, :]
             
             # denormalize prediction and store
-            denorm_output = utils.denormalize(deepcopy(output), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
+            denorm_output = h_fun1.denormalize(deepcopy(output), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
             denorm_outputs[idx, :, 0:CUR_LEN, :] = denorm_output[1:, :, :]
             
             # denormalize target and save
-            denorm_target = utils.denormalize(deepcopy(trg), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
+            denorm_target = h_fun1.denormalize(deepcopy(trg), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
             denorm_targets[idx, :, 0:CUR_LEN, :] = denorm_target[1:, :, :]
             
             # dimension check:

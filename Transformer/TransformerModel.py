@@ -8,6 +8,7 @@ Created on Fri Jun  5 14:16:27 2020
 
 import torch
 import torch.nn as nn
+import random
 
 class Model(nn.Module):
     def __init__(self, encoder, decoder):
@@ -18,13 +19,17 @@ class Model(nn.Module):
         
         return
     
-    def forward(self, source, target):
+    def forward(self, source, target, module = 'train'):
+        
+        # dim
+        TRG_LEN, BATCH_SIZE, TRG_DIM = target.shape
         
         # encoder pass
         memory = self.encoder(source)
         
         # decoder pass
-        prediction = self.decoder(target, memory)
+        prediction = self.decoder(target, memory, module)
+            
         
         return prediction
         
