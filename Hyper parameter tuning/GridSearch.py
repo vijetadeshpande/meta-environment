@@ -9,10 +9,13 @@ import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Combination model')
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Transformer')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN Vanilla')
 
 #from main_GRU import init_training
 #from main_Combination import init_training
-from main_Transformer import init_training
+#from main_Transformer import init_training
+#from main_Vanilla import init_training
+from main_LSTM import init_training
 import numpy as np
 import itertools
 from ModelData import ModelData
@@ -27,15 +30,15 @@ datapath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and r
 respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results'
 
 # load data
-data_object = ModelData(datapath, batch_size = 32)
+data_object = ModelData(datapath, batch_size = 16)
 
 # Grid for hyper-par search
-hidden_dims = [512]
-n_layers = [1]
-l_rates = [0.004]#[0.01, 0.001, 0.00001]#np.power(10, np.random.normal(loc=-3.5, scale=0.7, size=10))
-n_epochs = [10]
+hidden_dims = [256]
+n_layers = [2]
+l_rates = [0.0006]#[0.01, 0.001, 0.00001]#np.power(10, np.random.normal(loc=-3.5, scale=0.7, size=10))
+n_epochs = [30]
 n_heads = [4]
-dropouts = [0.8]
+dropouts = [0]
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #

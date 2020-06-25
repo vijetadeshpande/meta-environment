@@ -13,6 +13,7 @@ import itertools
 import torch
 from FunctionApproximator import GRUApproximator as FGRU
 from FunctionApproximator import TransformerApproximator as FTrans
+from FunctionApproximator import VanillaApproximator as FVan
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
 import HelperFunctions2 as h_fun2
@@ -68,9 +69,9 @@ for city in ['rio']:
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/Transformer_02.pt' #r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/GRULatest.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/VanillaRNN.pt'#r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/Transformer_02.pt' #r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/GRULatest.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
-Environment = FTrans(filepath)
+Environment = FVan(filepath)
 
 # dictionary for storage
 ALL_per_red = {}

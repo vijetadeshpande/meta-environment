@@ -17,6 +17,8 @@ from TransformerEncoder import Encoder as TEnc
 from TransformerDecoder import Decoder as TDec
 from TransformerModel import Model as TModel
 from TransformerEvaluate import evaluate as TEval
+from VanillaModel import Model as VanillaModel
+from VanillaEvaluate import evaluate as VanillaEval
 
 class GRUApproximator(nn.Module):
     def __init__(self, filepath):
@@ -85,6 +87,44 @@ class TransformerApproximator(nn.Module):
         
         # predicr
         prediction = TEval(self.model, input_data, self.criterion, DEVICE, z_path)
+        
+        return prediction
+    
+class VanillaApproximator(nn.Module):
+    def __init__(self, filepath):
+        super().__init__()
+        
+        # here we make a computational graph suited optimal RNN model
+        # then we load the .pt file and we are all set
+        
+        # create model
+        INPUT_DIM, OUTPUT_DIM = 8, 3
+        HID_DIM, N_LAYERS, DROPOUT  = 256, 2, 0
+        DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model = VanillaModel(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
+        model = model.to(DEVICE)
+        
+        # load file
+        model.load_state_dict(torch.load(filepath))
+        model.eval()
+        
+        # set sttribute
+        self.model = model
+        
+        #
+        self.criterion = nn.MSELoss().to(DEVICE) #nn.SmoothL1Loss().to(DEVICE)
+        
+        return
+    
+    def forward(self, input_data, z_path, DEVICE):
+        
+        # check shape
+        # input_tensor = [BATCH, SEQ_LEN, INPUT_DIM]
+        #EXAMPLES, SRC_LEN, INPUT_DIM = input_tensor[0].shape
+        
+        # predict
+        prediction = VanillaEval(self.model, input_data, self.criterion, DEVICE, z_path)
+        
         
         return prediction
         
