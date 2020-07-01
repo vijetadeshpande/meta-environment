@@ -35,7 +35,7 @@ def evaluate(model, data, criterion, device, seqpath):
             trg = example[1].to(device)
             
             # predict output and append
-            output = model(src, trg)#, 0) # switch off teacher forcing
+            output = model(src, trg, 0) # switch off teacher forcing
             outputs.append(output.numpy())
             
             # denormalize prediction and append

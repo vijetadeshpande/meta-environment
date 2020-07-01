@@ -18,8 +18,8 @@ from sklearn.preprocessing import normalize
 from copy import deepcopy
 import timeit
 import input_parameters as ipar
-import utils
-import utils2
+import HelperFunctions1 as h_fun1
+import HelperFunctions2 as h_fun2
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
 import link_to_cepac_in_and_out_files as link
@@ -69,7 +69,7 @@ for batch in batch_list:
     #
     if os.path.exists(os.path.join(path_rnn)):
         # load data
-        data_rnn[batch] = utils.load_all_json(path_rnn)
+        data_rnn[batch] = h_fun1.load_all_json(path_rnn)
         
         # check if we have CEPAC output
         #if not 'rnn_target' in data_rnn:
@@ -90,14 +90,14 @@ for batch in batch_list:
 
             # save raw data to json file
             filename = os.path.join(path_rnn, r'CEPAC_output.json')
-            utils.dump_json(data_cepac[batch], filename)
+            h_fun1.dump_json(data_cepac[batch], filename)
         
         else:
             data_cepac[batch] = data_rnn[batch].pop('CEPAC_output')
             
 # coverting keys from str to int
 for batch in data_cepac:
-    data_cepac[batch] = utils.sort_output_dict(data_cepac[batch])
+    data_cepac[batch] = h_fun1.sort_output_dict(data_cepac[batch])
 
 # now we need all the data in 'data_cepac' in one place to calculate mean, sd anf standardize the output data from it
 TOTAL_EXAMPLES = sum([len(data_cepac[i]) for i in data_cepac])
@@ -145,14 +145,14 @@ for batch in data_cepac:
         for file in CEPAC_input_files:
             _, idx_file = file.split('_')
             idx_file = int(idx_file) #+ (int(batch)*1000 - 5000)
-            cepac_batch_input.iloc[idx_file, :] = utils.condense_in_file(CEPAC_input_files[file], var_list, var_loc)
+            cepac_batch_input.iloc[idx_file, :] = h_fun1.condense_in_file(CEPAC_input_files[file], var_list, var_loc)
     
         # add to cepac_input
         cepac_input[START_INDEX:END_INDEX, :, :] = cepac_batch_input.values#.tolist()
         
         # save condensed cepac input files
         cepac_batch_input = cepac_batch_input.to_dict()
-        utils.dump_json(cepac_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'CEPAC_input.json'))
+        h_fun1.dump_json(cepac_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'CEPAC_input.json'))
         
         # store
         data_rnn[batch]['CEPAC_input'] = cepac_batch_input
@@ -166,18 +166,18 @@ for batch in data_cepac:
         
         # define condensed input and input bounds (required for standardization)
         cepac_batch_input = pd.DataFrame(data_rnn[batch]['CEPAC_input'])
-        input_bounds = utils.load_json('input_bounds.json')
+        input_bounds = h_fun1.load_json('input_bounds.json')
         
         rnn_batch_input = []
         for file in cepac_batch_input.index:
-            x = utils2.build_state(cepac_batch_input.loc[file, :], input_bounds, output_type = 'list')
+            x = h_fun2.build_state(cepac_batch_input.loc[file, :], input_bounds, output_type = 'list')
             rnn_batch_input.append(x)
         
         # store
         data_rnn[batch]['RNN_source'] = rnn_batch_input
         
         # save
-        utils.dump_json(rnn_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'RNN_source.json'))
+        h_fun1.dump_json(rnn_batch_input, os.path.join(os.path.join(PATH_RAW, batch, 'Files for RNN'), 'RNN_source.json'))
         
         # collect
         rnn_input[START_INDEX:END_INDEX, :, :] = data_rnn[batch]['RNN_source']
@@ -225,8 +225,8 @@ labels.loc[:, 'train'], labels.loc[0:len(labels_test)-1, 'test'] = labels_train,
 labels.to_csv(os.path.join(path_regression_in, 'labels.csv'))
 
 # pickle the data
-utils.dump_json([(X_train.values.tolist(), Y_train.values.tolist())], os.path.join(path_regression_in, 'train.json'))
-utils.dump_json([(X_test.values.tolist(), Y_test.values.tolist())], os.path.join(path_regression_in, 'test.json'))
+h_fun1.dump_json([(X_train.values.tolist(), Y_train.values.tolist())], os.path.join(path_regression_in, 'train.json'))
+h_fun1.dump_json([(X_test.values.tolist(), Y_test.values.tolist())], os.path.join(path_regression_in, 'test.json'))
 
 # save the mean and sd of the output data
 OUT_FEATURES = ['transmissions', 'infections', 'susceptibles']
@@ -239,5 +239,5 @@ for feature in OUT_FEATURES:
 mean_sd.to_csv(os.path.join(path_regression_in, r'output_mean_and_sd.csv'))
 
 # unshuffled data for reference
-utils.dump_json([(cepac_input, cepac_output)], os.path.join(path_regression_in, 'CEPAC_data_unshuffled.json'))
-utils.dump_json([(rnn_input, rnn_output)], os.path.join(path_regression_in, 'RNN_data_unshuffled.json'))
+h_fun1.dump_json([(cepac_input, cepac_output)], os.path.join(path_regression_in, 'CEPAC_data_unshuffled.json'))
+h_fun1.dump_json([(rnn_input, rnn_output)], os.path.join(path_regression_in, 'RNN_data_unshuffled.json'))

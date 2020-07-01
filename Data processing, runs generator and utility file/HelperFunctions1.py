@@ -122,10 +122,10 @@ def expand_input(val, horizon):
 # de-normalize the output values
 def denormalize(x, mean, sd):
     # shape
-    SEQ_LEN, BATCH, FEATURES = x.shape
+    (BATCH, SEQ_LEN, FEATURES) = x.shape
     # loop over features
     for feature in range(0, FEATURES):
-        x[1:, :, feature] = (x[1:, :, feature] * sd[feature]) + mean[feature]
+        x[:, 1:, feature] = (x[:, 1:, feature] * sd[feature]) + mean[feature]
         #x[1:, :, feature] = np.multiply(x[1:, :, feature], sd[feature]) + mean[feature]
     
     return x

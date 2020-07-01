@@ -69,6 +69,7 @@ def init_training(data_object, par_dict, datapath, respath):
     
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma = 0.3)
     
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -106,7 +107,7 @@ def init_training(data_object, par_dict, datapath, respath):
         # update validation loss if less than previously observed minimum
         if epoch == (N_EPOCHS - 1): #valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
-            torch.save(model.state_dict(), 'RNNGRU.pt')        
+            torch.save(model.state_dict(), 'RNN_GRU.pt')        
     
         # print progress
         try:
@@ -121,6 +122,9 @@ def init_training(data_object, par_dict, datapath, respath):
         
         # update time
         total_time += (epoch_mins + (epoch_secs/60))
+        
+        # update learning rate
+        scheduler.step()
     
     
     # shuffle the dataset and calculate error on training set again

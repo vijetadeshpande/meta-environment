@@ -8,7 +8,7 @@ Created on Thu Apr 30 16:52:25 2020
 import scipy as sp
 import numpy as np
 from scipy.stats import truncnorm, bernoulli, uniform
-import utils
+import HelperFunctions1 as h_fun1
 import math
 
 #%% aux functions

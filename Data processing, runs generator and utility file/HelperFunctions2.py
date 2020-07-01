@@ -10,6 +10,7 @@ import scipy as sp
 from copy import deepcopy
 import os
 import numpy as np
+import pandas as pd
 import torch
 import HelperFunctions1 as h_fun1
 import _pickle as pickle
@@ -17,6 +18,9 @@ import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import random
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
+import link_to_cepac_in_and_out_files as link
 
 # build state of the system
 def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torch'):
@@ -159,3 +163,56 @@ def community_benefit(run_A, run_B):
     """
     
     return percentage_decline, coeff
+
+def create_target_tensor(path, device, SEQ_LEN = 60):
+    
+    # path: result folder of the set of runs for which we want to create the target tensor
+    
+    # import all results
+    cepac_outputs = link.import_all_cepac_out_files(path, module = 'regression')
+    targets, targets_std = {}, {}
+    
+    # import output distribtion parameters
+    para = pd.read_csv(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input/output_mean_and_sd.csv').set_index('Unnamed: 0')
+    
+    # iterate over each file
+    for file in cepac_outputs:
+        # skip run_c
+        if 'RunC' in file:
+            continue
+        
+        # get coverage and coverage time, for setting it as key of dict
+        try:
+            coverage, cov_time = int(file.split('=')[1][:2]), int(file.split('=')[2])
+        except:
+            if 'SQ' in file: 
+                coverage, cov_time = 0, 0
+            else:
+                coverage, cov_time = 'NA', 'NA'
+        
+        # remove the multiplier array
+        try:
+            cepac_outputs[file].pop('multiplier')
+        except:
+            pass
+        
+        #
+        for feature in cepac_outputs[file]:
+            cepac_outputs[file][feature] = cepac_outputs[file][feature].to_list()[:SEQ_LEN]
+        
+        # store as matrix
+        targets[(coverage, cov_time)] = pd.DataFrame(0, index = np.arange(SEQ_LEN + 1), columns = cepac_outputs[file].keys())
+        targets[(coverage, cov_time)].iloc[1:, :] = pd.DataFrame(cepac_outputs[file]).values
+        
+        # standardize targets
+        targets_std[(coverage, cov_time)] = pd.DataFrame(0, index = targets[(coverage, cov_time)].index, columns = targets[(coverage, cov_time)].columns)
+        for feature in cepac_outputs[file]:
+            targets_std[(coverage, cov_time)].loc[1:, feature] = (targets[(coverage, cov_time)].loc[1:, feature] - para.loc['mean', feature])/para.loc['sd', feature]
+            
+        # convert to numpy array 
+        targets[(coverage, cov_time)] = torch.tensor(np.array(targets[(coverage, cov_time)])).float().to(device)
+        targets_std[(coverage, cov_time)] = torch.tensor(np.array(targets_std[(coverage, cov_time)])).float().to(device)
+    
+    return targets, targets_std
+    
+    

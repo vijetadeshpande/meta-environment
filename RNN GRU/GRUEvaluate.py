@@ -7,7 +7,7 @@ Created on Mon Mar 16 20:47:35 2020
 """
 import torch
 import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/Data processing, runs generator and utility file')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
 import HelperFunctions1 as h_fun1
 import pandas as pd
 import os
@@ -35,7 +35,7 @@ def evaluate(model, data, criterion, device, seqpath):
             trg = example[1].to(device)
             
             # predict output and append
-            output = model(src, trg)#, 0) # switch off teacher forcing
+            output = model(src, trg, 0) # switch off teacher forcing
             outputs.append(output.numpy())
             
             # denormalize prediction and append

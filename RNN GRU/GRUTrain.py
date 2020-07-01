@@ -35,7 +35,7 @@ def train(model, data, optimizer, criterion, clip, device, cohort_size = 1):
         
         # feed src to the encoder to get cell and hidden
         # then feed cell and hidden to deoder to get the output
-        output = model(src, trg)
+        output = model(src, trg, 0.5)
         
         #
         trg = trg.permute(1, 0, 2)

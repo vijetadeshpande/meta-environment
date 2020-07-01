@@ -42,7 +42,7 @@ class Model(nn.Module):
         
         return
     
-    def forward(self, source, target):
+    def forward(self, source, target, teacher_forcing_ratio = 1):
         
         # input check
         # source = [batch size, seq len, input dim]
@@ -65,7 +65,7 @@ class Model(nn.Module):
             if t == 0:
                 teacher_force = True
             else:
-                teacher_force = random.random() < self.teacher_forcing_ratio
+                teacher_force = random.random() < teacher_forcing_ratio
             output = target[:, t, :].unsqueeze(1) if teacher_force else output
             
             # input for this time step (concatenate input and last output)

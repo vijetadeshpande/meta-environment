@@ -9,8 +9,8 @@ import torch
 import torch.nn as nn
 from numpy import random
 
-class LSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False, teacher_forcing_ratio = 0.5):
+class Model(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False):
         super().__init__()
         
         # set attributes
@@ -20,7 +20,7 @@ class LSTM(nn.Module):
         self.n_layers = n_layers
         self.is_bidirectional = is_bidirectional
         self.device = device
-        self.teacher_forcing_ratio = teacher_forcing_ratio
+        #self.teacher_forcing_ratio = teacher_forcing_ratio
         
         # dropout
         self.dropout = nn.Dropout(dropout)
@@ -41,7 +41,7 @@ class LSTM(nn.Module):
         
         return
     
-    def forward(self, source, target):
+    def forward(self, source, target, teacher_forcing_ratio = 1):
         
         # input check
         # source = [batch size, seq len, input dim]
@@ -65,7 +65,7 @@ class LSTM(nn.Module):
             if t == 0:
                 teacher_force = True
             else:
-                teacher_force = random.random() < self.teacher_forcing_ratio
+                teacher_force = random.random() < teacher_forcing_ratio
             output = target[:, t, :].unsqueeze(1) if teacher_force else output
             
             # input for this time step (concatenate input and last output)

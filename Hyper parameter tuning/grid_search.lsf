@@ -1,0 +1,7 @@
+#!/bin/bash
+#BSUB -J "grid search"
+#BSUB -R "rusage[mem=1000]"
+#BSUB -q gpu
+#BSUB -u vdeshpande1@mgh.harvard.edu
+#BSUB -N
+python /PHShome/vkd2/meta-environment/Try\ this/GridSearch.py

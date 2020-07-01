@@ -6,7 +6,7 @@ Created on Thu May 14 00:49:12 2020
 @author: vijetadeshpande
 """
 
-from LSTMModel import LSTM
+from LSTMModel import Model
 from LSTMTrain import train
 from LSTMEvaluate import evaluate
 import time
@@ -55,7 +55,7 @@ def init_training(data_object, par_dict, datapath, respath):
     INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
 
     # initialize encoder, decoder and seq2seq model classes
-    model = LSTM(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
+    model = Model(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
     model = model.to(DEVICE)
 
     # initialize values of learnable parameters
@@ -71,6 +71,7 @@ def init_training(data_object, par_dict, datapath, respath):
 
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 3, gamma = 0.5)
 
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -108,7 +109,7 @@ def init_training(data_object, par_dict, datapath, respath):
         # update validation loss if less than previously observed minimum
         if valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
-            torch.save(model.state_dict(), 'tut1-model.pt')        
+            torch.save(model.state_dict(), 'RNN_LSTM.pt')        
 
         # print progress
         try:
@@ -123,6 +124,9 @@ def init_training(data_object, par_dict, datapath, respath):
 
         # update time
         total_time += (epoch_mins + (epoch_secs/60))
+        
+        # update learning rate
+        scheduler.step()
 
 
     ## shuffle the dataset and calculate error on training set again

@@ -24,11 +24,14 @@ import HelperFunctions1 as h_fun1
 DEVICE = 'cpu' 
 SRC_LEN = 60
 TRG_LEN = 61
+OUT_DIM = 3
+TARGET_INT = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_mm/Positive coverage runs_mm/results'
+TARGET_SQ = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_mm/Status quo_mm/results'
 
 # imports
 SQ_inputs = pd.read_csv('city_specific_inputs.csv')
 SQ_inputs = SQ_inputs.set_index('city')
-SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0.0001, 0
+SQ_inputs['PrEPCoverage'],  SQ_inputs['PrEPDuration']= 0, 0
 input_bounds = h_fun1.load_json(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input/input_mean_and_sd.json')
 
 #%% STRATEGIES
@@ -41,13 +44,18 @@ uptake_s = [2]
 # create dictionary of input parameters necessary to create an input signal
 strategies = list(itertools.product(uptake, uptake_t, uptake_s))
 FEATURE_VEC = h_fun1.get_feature_vector()
-EXAMPLES, SRC_LEN, INPUT_DIM, OUTPUT_DIM = len(strategies), 60, len(FEATURE_VEC), 3
+EXAMPLES, INPUT_DIM = len(strategies), len(FEATURE_VEC)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # initialize 
 Run_A = h_fun2.build_state(SQ_inputs.loc['rio', :], input_bounds, DEVICE).repeat(EXAMPLES, 1, 1)
-Run_B = torch.zeros((EXAMPLES, SRC_LEN, INPUT_DIM)).type('torch.FloatTensor').to(DEVICE)
-Y = torch.zeros((EXAMPLES, SRC_LEN+1, OUTPUT_DIM)).type('torch.FloatTensor').to(DEVICE)
+Run_B = torch.zeros((EXAMPLES, SRC_LEN, INPUT_DIM)).float().to(DEVICE)
+
+# import all the cepac_outputs
+trg_int, trg_int_std = h_fun2.create_target_tensor(TARGET_INT, DEVICE)
+trg_sq, trg_sq_std = h_fun2.create_target_tensor(TARGET_SQ, DEVICE)
+Y_int = torch.zeros((EXAMPLES, TRG_LEN, OUT_DIM)).float().to(DEVICE)
+Y_sq = torch.zeros((EXAMPLES, TRG_LEN, OUT_DIM)).float().to(DEVICE)
 
 # create rnn inputs for RunA and RunB for each strategy
 for city in ['rio']:
@@ -64,30 +72,34 @@ for city in ['rio']:
         
         # convert set of inputs to feature matrix
         Run_B[idx_strategy, :, :] = h_fun2.build_state(INT_float.loc[city, :], input_bounds, DEVICE)
+        
+        # store targets
+        Y_int[idx_strategy, :, :] = trg_int_std[(int(100 * cov), cov_t)]
+        Y_sq[idx_strategy, :, :] = trg_sq_std[(0, 0)]
 
 
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/VanillaRNN.pt'#r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/Transformer_02.pt' #r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/GRULatest.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/RNN_GRU.pt'#r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/VanillaRNN.pt'
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
-Environment = FVan(filepath)
+Environment = FGRU(filepath)#FVan(filepath)
 
 # dictionary for storage
 ALL_per_red = {}
 ALL_red_coe = {}
 
 # forward pass
-data = h_fun1.new_feature_representation([[Run_A, Y]], data_type = 'torch')
-SQ_ = Environment(data, z_path, DEVICE)
-data = h_fun1.new_feature_representation([[Run_B, Y]], data_type = 'torch')
-INT_ = Environment(data, z_path, DEVICE)
+data = h_fun1.new_feature_representation([[Run_A, Y_sq]], data_type = 'torch')
+prediction_sq = Environment(data, z_path, DEVICE)
+data = h_fun1.new_feature_representation([[Run_B, Y_int]], data_type = 'torch')
+prediction_int = Environment(data, z_path, DEVICE)
 
 # iterate over all possible values (should be 24)
 for strategy in range(0, len(strategies)):
     
     # TX algo
-    percentage_reduction, reduction_coeff = h_fun2.community_benefit(SQ_['denormalized prediction'][0][:, strategy, :], INT_['denormalized prediction'][0][:, strategy, :])
+    percentage_reduction, reduction_coeff = h_fun2.community_benefit(prediction_sq['denormalized prediction'][0][:, strategy, :], prediction_int['denormalized prediction'][0][:, strategy, :])
     
     # save community benefit
     key = str(strategies[strategy])
