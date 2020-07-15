@@ -12,12 +12,14 @@ sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Tr
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN Vanilla')
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN LSTM')
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/RNN GRU')
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Combination model 2')
 
 from main_GRU import init_training
 #from main_Combination import init_training
 #from main_Transformer import init_training
 #from main_Vanilla import init_training
 #from main_LSTM import init_training
+#from main_Combi2 import init_training
 import numpy as np
 import itertools
 from ModelData import ModelData
@@ -35,12 +37,12 @@ respath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and re
 data_object = ModelData(datapath, batch_size = 16)
 
 # Grid for hyper-par search
-hidden_dims = [128]
+hidden_dims = [16]
 n_layers = [2]
 l_rates = [0.0006]#[0.01, 0.001, 0.00001]#np.power(10, np.random.normal(loc=-3.5, scale=0.7, size=10))
 n_epochs = [10]
 n_heads = [4]
-dropouts = [0.5]
+dropouts = [0.05]
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #
@@ -92,6 +94,20 @@ sns.lineplot(data = plot_df,
 plt.savefig('final error plot2.jpeg', dpi = 360)
 plot_df.to_csv('MSEs.csv')
 h_fun1.dump_json(results, 'all_results.json')
+
+# comparison of validation and training error
+plot_df = pd.DataFrame(0, index = np.arange(2 * n_epochs[0]), columns = ['Epoch', 'MSE', 'Type'])
+plot_df['Epoch'] = [i for i in range(n_epochs[0])] * 2
+plot_df.loc[:n_epochs[0]-1, 'MSE'] = results[1]['results']['train loss']
+plot_df.loc[0:n_epochs[0]-1, 'Type'] = 'Training'
+plot_df.loc[n_epochs[0]:, 'MSE'] = results[1]['results']['validation loss']
+plot_df.loc[n_epochs[0]:, 'Type'] = 'Validation'
+plt.figure(figsize=(8, 6))
+sns.lineplot(data = plot_df,
+             x = 'Epoch',
+             y = 'MSE',
+             hue = 'Type')
+plt.savefig('compare training and validation error.jpeg', dpi = 360)
     
     
 

@@ -105,10 +105,11 @@ def init_training(data_object, par_dict, datapath, respath):
         # print
         # if we happen to have a validation data set then calculate validation
         # loss here by predicting the value of validation set 'x's
+        
         # update validation loss if less than previously observed minimum
         if valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
-            torch.save(model.state_dict(), 'RNNVan.pt')        
+            torch.save(model.state_dict(), 'RNNCombi2.pt')        
     
         # print progress
         try:
@@ -154,9 +155,12 @@ def init_training(data_object, par_dict, datapath, respath):
     plot_df['Epoch'] = np.arange(len(plot_df))
     #plot_df.to_csv(os.path.join(respath, 'RNN GRU_Error plot.csv'))
     
+    
     return {'train loss': train_losses, 
             'validation loss': valid_losses,
             'shuffle train loss': tt_loss_s, 
             'test loss': test_loss, 
             'total time': total_time}
 
+#x = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/test check/results'
+#link.export_output_to_excel(x, x)

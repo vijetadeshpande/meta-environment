@@ -212,12 +212,13 @@ rnn_output, cepac_output = rnn_output.tolist(), cepac_output.tolist()
 
 # convert into pandas dataframe
 X, Y = pd.DataFrame(rnn_input, index = np.arange(TOTAL_EXAMPLES)), pd.DataFrame(rnn_output, index = np.arange(TOTAL_EXAMPLES))
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2)
+X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.25)
 
 # extract and save labels of the runs for train and test datasets
-labels_train, labels_test = X_train.index, X_test.index
-labels = pd.DataFrame(-1, index = np.arange(len(labels_train)), columns = ['train', 'test'])
-labels.loc[:, 'train'], labels.loc[0:len(labels_test)-1, 'test'] = labels_train, labels_test
+labels_train, labels_test, labels_val = X_train.index, X_test.index, X_val.index
+labels = pd.DataFrame(-1, index = np.arange(len(labels_train)), columns = ['train', 'test', 'validation'])
+labels.loc[:, 'train'], labels.loc[0:len(labels_test)-1, 'test'], labels.loc[0:len(labels_val)-1, 'validation'] = labels_train, labels_test, labels_val
 
 #%% SAVE FILES
 
@@ -227,6 +228,8 @@ labels.to_csv(os.path.join(path_regression_in, 'labels.csv'))
 # pickle the data
 h_fun1.dump_json([(X_train.values.tolist(), Y_train.values.tolist())], os.path.join(path_regression_in, 'train.json'))
 h_fun1.dump_json([(X_test.values.tolist(), Y_test.values.tolist())], os.path.join(path_regression_in, 'test.json'))
+h_fun1.dump_json([(X_val.values.tolist(), Y_val.values.tolist())], os.path.join(path_regression_in, 'validation.json'))
+
 
 # save the mean and sd of the output data
 OUT_FEATURES = ['transmissions', 'infections', 'susceptibles']

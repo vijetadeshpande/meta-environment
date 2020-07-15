@@ -47,16 +47,20 @@ class ModelData():
         try:
             data_train = h_fun1.load_json(os.path.join(data_dir, 'train.json'))
             data_test = h_fun1.load_json(os.path.join(data_dir, 'test.json'))
+            data_val = h_fun1.load_json(os.path.join(data_dir, 'validation.json'))
         except:
             try:
                 infile = open(os.path.join(data_dir, 'train.pkl'), 'rb')
                 data_train = pickle.load(infile)
                 infile = open(os.path.join(data_dir, 'test.pkl'), 'rb')
                 data_test = pickle.load(infile)
+                infile = open(os.path.join(data_dir, 'validation.pkl'), 'rb')
+                data_val = pickle.load(infile)
             except:
                 try:
                     data_train = np.load(os.path.join(data_dir, 'train.npy'), allow_pickle = True).tolist()
                     data_test = np.load(os.path.join(data_dir, 'test.npy'), allow_pickle = True).tolist()
+                    data_val = np.load(os.path.join(data_dir, 'validation.npy'), allow_pickle = True).tolist()
                 except:
                     print('\nNO DATA FILE FOUND')
                     return
@@ -64,14 +68,17 @@ class ModelData():
         # using new feature representation
         data_train = h_fun1.new_feature_representation(data_train)
         data_test = h_fun1.new_feature_representation(data_test)
+        data_val = h_fun1.new_feature_representation(data_val)
+        
         
         # STEP - 2: create numpy array of required shape and convert them into torch tensors
         X_train, Y_train = torch.FloatTensor(np.array(data_train[0][0])), torch.FloatTensor(np.array(data_train[0][1]))
         X_test, Y_test = torch.FloatTensor(np.array(data_test[0][0])), torch.FloatTensor(np.array(data_test[0][1]))
+        X_val, Y_val = torch.FloatTensor(np.array(data_val[0][0])), torch.FloatTensor(np.array(data_val[0][1]))
         EXAMPLES_TRN, INPUT_SEQ_LEN, INPUT_DIM, EXAMPLES_TST, OUTPUT_SEQ_LEN = X_train.shape[0], X_train.shape[1], X_train.shape[-1], X_test.shape[0], Y_train.shape[1]
         
         # STEP - 3: create tuples
-        train, test, train_run_idx, test_run_idx = [], [], [], []
+        train, test, val, train_run_idx, test_run_idx = [], [], [], [], []
         for example in range(0, EXAMPLES_TRN, batch_size):
             X, Y = X_train[example:example + batch_size, :, :], Y_train[example:example + batch_size, :]
             X, Y = X, Y#.unsqueeze(2)
@@ -80,12 +87,16 @@ class ModelData():
             X, Y = X_test[example:example + batch_size, :, :], Y_test[example:example + batch_size, :]
             X, Y = X, Y#.unsqueeze(2)
             test.append((X, Y))
+        for example in range(0, EXAMPLES_TST, batch_size):
+            X, Y = X_val[example:example + batch_size, :, :], Y_val[example:example + batch_size, :]
+            X, Y = X, Y#.unsqueeze(2)
+            val.append((X, Y))
             
         # store output_dim
         OUTPUT_DIM = Y.shape[-1]
         
         # set attributes for the ModelData class
-        self.train_examples, self.val_examples, self.test_examples = train, None, test
+        self.train_examples, self.val_examples, self.test_examples = train, val, test
         #self.SRC, self.TRG = SRC, TRG
         
         # dimension attributes

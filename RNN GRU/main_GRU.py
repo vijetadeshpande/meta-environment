@@ -47,7 +47,7 @@ def init_training(data_object, par_dict, datapath, respath):
     
     # create data object
     #data_object = ModelData(datapath, batch_size = 128)
-    data_train, data_test = data_object.train_examples, data_object.test_examples
+    data_train, data_test, data_val = data_object.train_examples, data_object.test_examples, data_object.val_examples
     
     # parameters for defining encoder and decoder
     INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
@@ -69,7 +69,7 @@ def init_training(data_object, par_dict, datapath, respath):
     
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma = 0.3)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 30, gamma = 0.3)
     
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -89,6 +89,7 @@ def init_training(data_object, par_dict, datapath, respath):
     
     # start training without attention
     train_losses = []
+    valid_losses = []
     total_time = 0
     for epoch in range(N_EPOCHS):
         
@@ -97,15 +98,16 @@ def init_training(data_object, par_dict, datapath, respath):
         start_time = time.time()
         # train
         train_loss = train(model, data_train, optimizer, criterion, CLIP, DEVICE)
+        valid_loss = evaluate(model, data_val, criterion, DEVICE, datapath)['average epoch loss']
         # stop clock
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
         # print
         # if we happen to have a validation data set then calculate validation
         # loss here by predicting the value of validation set 'x's
-        valid_loss = 0
+
         # update validation loss if less than previously observed minimum
-        if epoch == (N_EPOCHS - 1): #valid_loss <= best_valid_loss:
+        if valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
             torch.save(model.state_dict(), 'RNN_GRU.pt')        
     
@@ -119,6 +121,7 @@ def init_training(data_object, par_dict, datapath, respath):
             
         # store error value
         train_losses.append(train_loss)
+        valid_losses.append(valid_loss)
         
         # update time
         total_time += (epoch_mins + (epoch_secs/60))
@@ -153,7 +156,8 @@ def init_training(data_object, par_dict, datapath, respath):
     #plot_df.to_csv(os.path.join(respath, 'RNN GRU_Error plot.csv'))
     
     
-    return {'train loss': train_losses, 'shuffle train loss': tt_loss_s, 'test loss': test_loss, 'total time': total_time}
-
-#x = r'/Users/vijetadeshpande/Documents/GitHub/Sequence2Sequence model for CEPAC prediction/test check/results'
-#link.export_output_to_excel(x, x)
+    return {'train loss': train_losses, 
+            'validation loss': valid_losses,
+            'shuffle train loss': tt_loss_s, 
+            'test loss': test_loss, 
+            'total time': total_time}
