@@ -14,7 +14,7 @@ from ChartClasses import ErrorPlot as EPlot
 
 
 # save plots for the predicted values
-readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/3'
+readdata = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/RNN results/4'
 plotsavepath = os.path.join(readdata, 'plots3')
 if not os.path.exists(plotsavepath):
     os.makedirs(plotsavepath)

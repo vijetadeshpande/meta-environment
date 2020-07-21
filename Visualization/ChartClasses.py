@@ -14,7 +14,7 @@ import os
 import numpy as np
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file')
-import utils
+import HelperFunctions1 as h_fun1
 
 
 def fill_values(df, time_array, y, feature, model, sample_array, start_idx, end_idx):
@@ -31,7 +31,9 @@ def fill_values(df, time_array, y, feature, model, sample_array, start_idx, end_
 def filename_to_key(filename):
     
     #
-    if 'GRU' in filename:
+    if 'Van' in filename:
+        key = 'Vanilla RNN'
+    elif 'GRU' in filename:
         key = 'RNN with GRU'
     elif 'LSTM' in filename:
         key = 'RNN with LSTM'
@@ -57,7 +59,7 @@ class FeatureSequencePlot:
         self.filename = filename
         
         # read data
-        data = utils.load_all_json(datapath)
+        data = h_fun1.load_all_json(datapath)
         self.data = data
         
         # which test examples to plot
@@ -90,7 +92,7 @@ class FeatureSequencePlot:
         
         # shape parameters
         NUM_MODELS = len(data)
-        TRG_SEQ, TEST_SAMPLES, OUT_FEATURES = data['RNN with GRU']['CEPAC'].shape
+        TRG_SEQ, TEST_SAMPLES, OUT_FEATURES = data['Vanilla RNN']['CEPAC'].shape
         
         # initiate dataframe to store the results
         df = pd.DataFrame(-1, index = np.arange(TRG_SEQ * NUM_MODELS * TEST_SAMPLES * OUT_FEATURES), columns = ['t (simulation month)', 'y', 'feature', 'Model', 'Example number'])
@@ -212,7 +214,7 @@ class ErrorPlot:
         self.filename = filename
         
         # read data
-        data = utils.load_all_csv(datapath)
+        data = h_fun1.load_all_csv(datapath)
         self.data = self.reshape_data(data)
         
         # which test examples to plot

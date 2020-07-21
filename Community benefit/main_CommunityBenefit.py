@@ -5,6 +5,9 @@ Created on Sun May 24 03:14:14 2020
 
 @author: vijetadeshpande
 """
+import sys
+sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
+
 import os
 import numpy as np
 import pandas as pd
@@ -14,10 +17,10 @@ import torch
 from FunctionApproximator import GRUApproximator as FGRU
 from FunctionApproximator import TransformerApproximator as FTrans
 from FunctionApproximator import VanillaApproximator as FVan
-import sys
-sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data processing, runs generator and utility file') 
 import HelperFunctions2 as h_fun2
 import HelperFunctions1 as h_fun1
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 #%% SOME PAR
 
@@ -25,8 +28,8 @@ DEVICE = 'cpu'
 SRC_LEN = 60
 TRG_LEN = 61
 OUT_DIM = 3
-TARGET_INT = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_mm/Positive coverage runs_mm/results'
-TARGET_SQ = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_mm/Status quo_mm/results'
+TARGET_INT = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_/Positive coverage runs_/results'
+TARGET_SQ = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/Community benefit CEPAC runs/Measurement of community benefit_/Status quo_/results'
 
 # imports
 SQ_inputs = pd.read_csv('city_specific_inputs.csv')
@@ -81,9 +84,9 @@ for city in ['rio']:
 #%% COMMUNITY BEN
 
 # initialize the model object
-filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/RNN_GRU.pt'#r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/VanillaRNN.pt'
+filepath = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/RNNGRU.pt' #r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/RNNVan.pt' 
 z_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'
-Environment = FGRU(filepath)#FVan(filepath)
+Environment = FGRU(filepath) #FVan(filepath)
 
 # dictionary for storage
 ALL_per_red = {}
@@ -106,5 +109,37 @@ for strategy in range(0, len(strategies)):
     ALL_per_red[key], ALL_red_coe[key] = percentage_reduction, reduction_coeff
     
     
-# plot heatmap from the saved values
+# lineplot for predicted values
+float_df = pd.DataFrame(0, index = np.arange(SRC_LEN * 3 * 2), columns = ['t', 'Value', 'Feature', 'Model'])
+float_df['t'] = [i for i in range(60)] * 6
+feature_col = ['Transmissions'] * 60 + ['Infections'] * 60 + ['Susceptible'] * 60
+float_df['Feature'] = feature_col * 2
+float_df['Model'] = ['RNN'] * 180 + ['CEPAC'] * 180
+for i in range(24):
+    float_df['Value'][:180] = np.reshape(prediction_int['denormalized prediction'][0][1:, i, :], (180, ), order = 'F')
+    float_df['Value'][180:] = np.reshape(prediction_int['denormalized target'][0][1:, i, :], (180, ), order = 'F')
+    plt.figure()
+    g = sns.FacetGrid(data = float_df, 
+                     row = 'Feature',
+                     sharex = False,
+                     sharey = False)#, hue="Coverage time")#, col_wrap=3)
+    g = (g.map(sns.lineplot, 
+               "t", 
+               'Value',
+               'Model',
+               alpha = 1).add_legend())#, "WellID")
     
+    # title
+    plt.subplots_adjust(top=0.9)
+    g.fig.suptitle('Prediction from RNN models')
+    
+    # save
+    filename = ('RNNGRU model, example number %d')%(i) + '.png'
+    plt.savefig(filename, dpi = 720)
+
+"""
+f_input11 = data[0][0].numpy()
+f_input21 = data[0][0].numpy()
+compare_sq = f_input1 == f_input11
+compare_sq_diff = f_input1 - f_input11
+"""

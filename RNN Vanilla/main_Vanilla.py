@@ -44,6 +44,8 @@ def init_training(data_object, par_dict, datapath, respath):
     L_RATE = par_dict['learning rate']
     N_EPOCHS = par_dict['number of epochs']
     DEVICE = par_dict['device']
+    CLIP = 1
+    best_valid_loss = float('inf')
     
     # create data object
     #data_object = ModelData(datapath, batch_size = 128)
@@ -76,10 +78,6 @@ def init_training(data_object, par_dict, datapath, respath):
     criterion = nn.MSELoss() #nn.CosineSimilarity(dim = 2) #nn.SmoothL1Loss() #nn.MSELoss()
     criterion = criterion.to(DEVICE)
     
-    # training parameters
-    CLIP = 1
-    best_valid_loss = float('inf')
-    
     # auxilliary function
     def epoch_time(start_time, end_time):
         elapsed_time = end_time - start_time
@@ -107,6 +105,7 @@ def init_training(data_object, par_dict, datapath, respath):
         # loss here by predicting the value of validation set 'x's
         # update validation loss if less than previously observed minimum
         if valid_loss <= best_valid_loss:
+            print('Saved parameters')
             best_valid_loss = valid_loss
             torch.save(model.state_dict(), 'RNNVan.pt')        
     
@@ -139,20 +138,15 @@ def init_training(data_object, par_dict, datapath, respath):
     
     
     # testing/prediction
-    #model.load_state_dict(torch.load('tut1-model.pt'))
+    model.load_state_dict(torch.load('RNNVan.pt'))
     prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
     test_loss = prediction['average epoch loss']
     
     # save predicted values
-    #filename = os.path.join(respath, 'GRU_RNN_test_result_samples.json')
-    #utils.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
-    
+    filename = os.path.join(respath, 'RNNVan_test_result_samples.json')
+    h_fun1.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
+
     print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
-    
-    # save df for lineplot
-    plot_df = pd.DataFrame(train_losses, columns = ['Mean Squared Error'])
-    plot_df['Epoch'] = np.arange(len(plot_df))
-    #plot_df.to_csv(os.path.join(respath, 'RNN GRU_Error plot.csv'))
     
     return {'train loss': train_losses, 
             'validation loss': valid_losses,

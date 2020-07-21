@@ -40,22 +40,10 @@ def define_distribution(dict_in, distribution):
         dist = uniform(lb, ub)
     
     return dist
-
-def calculate_average_tx_rate(on_ART, parameters):
-    
-    avg_rate = np.zeros((len(on_ART), ))
-    idx = -1
-    for val in on_ART:
-        idx += 1
-        community_VL = np.multiply(val, parameters['viral load distribution on ART']) + np.multiply((1 - val), parameters['viral load distribution off ART'])
-        weighted_avg = np.sum(np.multiply(community_VL, parameters['attia']))
-        avg_rate[idx] = weighted_avg
-    
-    return avg_rate
     
 #%% MAIN FUNCTION
     
-def get_samples(sample_n):
+def get_samples(sample_n, sample_type = 'variable', action_val = None):
     # some required parameters
     horizon = 60
     parameters = {'attia': np.array([9.03, 8.12, 8.12, 4.17, 2.06, 0.16, 0, 62.56]),
@@ -117,7 +105,7 @@ def get_samples(sample_n):
     for var in var_list:
         if var in dep_var_list or var in ignore_var_list:
             if var == 'InitAge':
-                sample_bounds[var] = {'lb': 196, 'ub': 480} # in months
+                sample_bounds[var] = {'lb': 196, 'ub': 480,} # in months
             continue
         
         # age             
@@ -175,20 +163,22 @@ def get_samples(sample_n):
     
     #%% SAMPLING FOR INDEPENDENT VAR
     
-    # define distribution and take samples
     samples = {}
-    for var in sample_bounds:
-        if var in fixed_var_list:
-            samples[var] = sample_bounds[var]['mean'] * np.ones((sample_n))
-        elif var in ['InitAge mean', 'InitAge sd', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPCoverage', 'PrEPDuration', 'onART', 'prevalence', 'DynamicTransmissionNumHIVPosHRG', 'DynamicTransmissionPropHRGAttrib']:
-            sample_bounds[var]['distribution'] = define_distribution(sample_bounds[var], 'truncnorm')
-            samples[var] = sample_bounds[var]['distribution'].rvs(sample_n)            
-        elif var in ['UseHIVIncidReduction', 'PrEPEnable']:
-            sample_bounds[var]['distribution'] = define_distribution(sample_bounds[var], 'bernoulli')
-            samples[var] = sample_bounds[var]['distribution'].rvs(sample_n)
-        elif var in ['HIVIncidReductionStopTime', 'PrEPShape', 'PrEPEfficacy', 'PrEPAdherence']:
-            sample_bounds[var]['distribution'] = None
-            samples[var] = sample_bounds[var]['lb'] * np.ones((sample_n, ))
+    if sample_type == 'variable':
+        # define distribution and take samples
+        for var in sample_bounds:
+            if var in fixed_var_list:
+                samples[var] = sample_bounds[var]['mean'] * np.ones((sample_n))
+            elif var in ['InitAge mean', 'InitAge sd', 'HIVIncidReductionCoefficient', 'HIVmthIncidMale', 'PrEPCoverage', 'PrEPDuration', 'onART', 'prevalence', 'DynamicTransmissionNumHIVPosHRG', 'DynamicTransmissionPropHRGAttrib']:
+                sample_bounds[var]['distribution'] = define_distribution(sample_bounds[var], 'truncnorm')
+                samples[var] = sample_bounds[var]['distribution'].rvs(sample_n)            
+            elif var in ['UseHIVIncidReduction', 'PrEPEnable']:
+                sample_bounds[var]['distribution'] = define_distribution(sample_bounds[var], 'bernoulli')
+                samples[var] = sample_bounds[var]['distribution'].rvs(sample_n)
+            elif var in ['HIVIncidReductionStopTime', 'PrEPShape', 'PrEPEfficacy', 'PrEPAdherence']:
+                sample_bounds[var]['distribution'] = None
+                samples[var] = sample_bounds[var]['lb'] * np.ones((sample_n, ))
+        
     
     #%% CALCULATION OF SAMPLES FOR DEPENDENT VAR
     
@@ -215,7 +205,7 @@ def get_samples(sample_n):
             #var_Z = (np.power(mean_X, 2) + var_X) * (np.power(mean_Y, 2) + var_Y) - (np.power(mean_X, 2) * np.power(mean_Y, 2))
             #sample_bounds[var] = {'mean': mean_Z, 'sd': np.power(var_Z, 0.5)}
         elif var == 'DynamicTransmissionNumTransmissionsHRG':
-            x = calculate_average_tx_rate(samples['onART'], parameters)
+            x = h_fun1.calculate_average_tx_rate(samples['onART'], parameters)
             samples[var] = x
             # save parameters
             sample_bounds[var] = {'mean': np.mean(x), 'sd': np.std(x)}

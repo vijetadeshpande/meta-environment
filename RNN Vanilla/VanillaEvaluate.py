@@ -20,8 +20,8 @@ def evaluate(model, data, criterion, device, seqpath):
     epoch_loss = 0
     
     # collect all the outputs
-    outputs = []
-    denorm_outputs = []
+    predictions = []
+    denorm_predictions = []
     denorm_targets = []
     
     # import denormalization parameters
@@ -35,12 +35,12 @@ def evaluate(model, data, criterion, device, seqpath):
             trg = example[1].to(device)
             
             # predict output and append
-            output = model(src, trg, 0) # switch off teacher forcing
-            outputs.append(output.numpy())
+            prediction = model(src, trg, 0) # switch off teacher forcing
+            predictions.append(prediction.numpy())
             
             # denormalize prediction and append
-            denorm_output = h_fun1.denormalize(deepcopy(output.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
-            denorm_outputs.append(denorm_output)
+            denorm_prediction = h_fun1.denormalize(deepcopy(prediction.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
+            denorm_predictions.append(denorm_prediction)
             
             # denormalize target and save
             trg = trg.permute(1, 0, 2)
@@ -52,10 +52,10 @@ def evaluate(model, data, criterion, device, seqpath):
             # output = [target_len, batch_size, out dim]
             
             # calculate error
-            TRG_LEN, BATCH_SIZE, OUTPUT_DIM = output.shape
+            TRG_LEN, BATCH_SIZE, OUTPUT_DIM = prediction.shape
             if str(criterion) in ['SmoothL1Loss()', 'MSELoss()']:
                 # reshape output and target
-                output = torch.reshape(output[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
+                output = torch.reshape(prediction[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
                 trg = torch.reshape(trg[1:, :, :], ((TRG_LEN-1)*BATCH_SIZE, OUTPUT_DIM))
                 
                 # calculate loss
@@ -69,8 +69,8 @@ def evaluate(model, data, criterion, device, seqpath):
     
     # return a dictionary
     all_metrics = {'average epoch loss': epoch_loss/len(data), 
-                   'normalized prediction': outputs,
-                   'denormalized prediction': denorm_outputs,
+                   'normalized prediction': predictions,
+                   'denormalized prediction': denorm_predictions,
                    'denormalized target': denorm_targets}
             
     return all_metrics

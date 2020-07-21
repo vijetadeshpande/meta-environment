@@ -122,11 +122,11 @@ def expand_input(val, horizon):
 # de-normalize the output values
 def denormalize(x, mean, sd):
     # shape
-    (BATCH, SEQ_LEN, FEATURES) = x.shape
+    (SEQ_LEN, BATCH, FEATURES) = x.shape
     # loop over features
     for feature in range(0, FEATURES):
-        x[:, 1:, feature] = (x[:, 1:, feature] * sd[feature]) + mean[feature]
-        #x[1:, :, feature] = np.multiply(x[1:, :, feature], sd[feature]) + mean[feature]
+        #x[:, 1:, feature] = (x[:, 1:, feature] * sd[feature]) + mean[feature]
+        x[1:, :, feature] = np.multiply(x[1:, :, feature], sd[feature]) + mean[feature]
     
     return x
 
@@ -422,5 +422,18 @@ def condense_in_file(in_file, var_list, var_loc = {}):
                 condensed_file.loc[0, var] = val
     
     return condensed_file.values[0]
+
+# calculation of average transmission rate
+def calculate_average_tx_rate(on_ART, parameters):
+    
+    avg_rate = np.zeros((len(on_ART), ))
+    idx = -1
+    for val in on_ART:
+        idx += 1
+        community_VL = np.multiply(val, parameters['viral load distribution on ART']) + np.multiply((1 - val), parameters['viral load distribution off ART'])
+        weighted_avg = np.sum(np.multiply(community_VL, parameters['attia']))
+        avg_rate[idx] = weighted_avg
+    
+    return avg_rate
 
 

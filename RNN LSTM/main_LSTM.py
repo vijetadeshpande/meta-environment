@@ -46,10 +46,12 @@ def init_training(data_object, par_dict, datapath, respath):
     L_RATE = par_dict['learning rate']
     N_EPOCHS = par_dict['number of epochs']
     DEVICE = par_dict['device']
+    CLIP = 1
+    best_valid_loss = float('inf')
 
     # create data object
     #data_object = ModelData(datapath, batch_size = 128)
-    data_train, data_test = data_object.train_examples, data_object.test_examples
+    data_train, data_test, data_val = data_object.train_examples, data_object.test_examples, data_object.val_examples
 
     # parameters for defining encoder and decoder
     INPUT_DIM, OUTPUT_DIM = data_object.input_features, data_object.output_features
@@ -71,16 +73,12 @@ def init_training(data_object, par_dict, datapath, respath):
 
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 3, gamma = 0.5)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.3)
 
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
     criterion = nn.MSELoss() #nn.SmoothL1Loss()
     criterion = criterion.to(DEVICE)
-
-    # training parameters
-    CLIP = 1
-    best_valid_loss = float('inf')
 
     # auxilliary function
     def epoch_time(start_time, end_time):
@@ -91,6 +89,7 @@ def init_training(data_object, par_dict, datapath, respath):
 
     # start training without attention
     train_losses = []
+    valid_losses = []
     total_time = 0
     for epoch in range(N_EPOCHS):
         
@@ -99,13 +98,13 @@ def init_training(data_object, par_dict, datapath, respath):
         start_time = time.time()
         # train
         train_loss = train(model, data_train, optimizer, criterion, CLIP, DEVICE)
+        valid_loss = evaluate(model, data_val, criterion, DEVICE, datapath)['average epoch loss']
         # stop clock
         end_time = time.time()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
         # print
         # if we happen to have a validation data set then calculate validation
         # loss here by predicting the value of validation set 'x's
-        valid_loss = 0
         # update validation loss if less than previously observed minimum
         if valid_loss <= best_valid_loss:
             best_valid_loss = valid_loss
@@ -121,6 +120,7 @@ def init_training(data_object, par_dict, datapath, respath):
 
         # store error value
         train_losses.append(train_loss)
+        valid_losses.append(valid_loss)
 
         # update time
         total_time += (epoch_mins + (epoch_secs/60))
@@ -138,29 +138,21 @@ def init_training(data_object, par_dict, datapath, respath):
     pred_mins, pred_secs = epoch_time(start_time, end_time)
 
     # testing/prediction
-    #model.load_state_dict(torch.load('tut1-model.pt'))
+    model.load_state_dict(torch.load('RNN_LSTM.pt'))
     prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
     test_loss = prediction['average epoch loss']
 
     # save predicted values
-    #filename = os.path.join(respath, 'LSTM_RNN_test_result_samples.json')
-    #utils.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
+    filename = os.path.join(respath, 'RNNLSTM_test_result_samples.json')
+    h_fun1.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
 
     print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
 
-    # save df for lineplot
-    plot_df = pd.DataFrame(train_losses, columns = ['Mean Squared Error'])
-    plot_df['Epoch'] = np.arange(len(plot_df))
-    #plot_df.to_csv(os.path.join(respath, 'RNN LSTM_Error plot.csv'))
-    """
-    plt.figure()
-    sns.lineplot(data = plot_df, 
-                 x = 'Epoch',
-                 y = 'Mean Squared Error')
-    plt.savefig(os.path.join(respath, 'RNN LSTM_Error plot.jpeg'))
 
-    """
-
-    return {'train loss': train_losses, 'shuffle train loss': tt_loss_s, 'test loss': test_loss, 'total time': total_time}
+    return {'train loss': train_losses, 
+            'validation loss': valid_losses,
+            'shuffle train loss': tt_loss_s, 
+            'test loss': test_loss, 
+            'total time': total_time}
 
 

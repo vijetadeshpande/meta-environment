@@ -24,7 +24,7 @@ from sklearn.preprocessing import normalize
 from copy import deepcopy
 import timeit
 import input_parameters as ipar
-import utils
+import HelperFunctions1 as h_fun1
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
 import link_to_cepac_in_and_out_files as link
@@ -101,10 +101,10 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
                 #print('This variable has been altered in .in file: %s'%(var))
                 
                 # fit a Gaussian curve 
-                #val, solution = utils.gaussian_fitter(samples[var][run], 
+                #val, solution = h_fun1.gaussian_fitter(samples[var][run], 
                 #                                      p_init = [1, np.divide(samples['InitAge'][0][0], 12), np.divide(samples['InitAge'][0][1], 12)])
                 val = samples[var][run]
-                val = utils.expand_incidence(val, length = 8, step = 4)
+                val = h_fun1.expand_incidence(val, length = 8, step = 4)
                 factor = 1 - np.multiply(parameters['PrEP efficacy'], parameters['PrEP adherence'])
                 val_prep = np.multiply(factor, val)
                 
@@ -112,8 +112,8 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
                 #samples['Gaussian solution'].append(solution)
                 
                 # convert rate value to monthly probability
-                val = utils.rate_to_prob(val, factor = 1200)
-                val_prep = utils.rate_to_prob(val_prep, factor = 1200)
+                val = h_fun1.rate_to_prob(val, factor = 1200)
+                val_prep = h_fun1.rate_to_prob(val_prep, factor = 1200)
                 
                 # replace value in the .in file
                 float_df = t_op.replace_values(var, val, float_df)
@@ -133,7 +133,7 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
         link.write_cepac_in_file(name, float_df)
         
         # featurizarion of the .in file
-        feature_mat = utils.featurize_in_file(samples, sample_bounds, run, SEQ_LEN)
+        feature_mat = h_fun1.featurize_in_file(samples, sample_bounds, run, SEQ_LEN)
         feature_tensor.append(feature_mat)
         
         # print
@@ -141,7 +141,7 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
         
     # save condensed cepac input files
     CEPAC_input_condensed = CEPAC_input_condensed.to_dict()
-    utils.dump_json(CEPAC_input_condensed, os.path.join(savepath_rnn, 'CEPAC_input.json'))
+    h_fun1.dump_json(CEPAC_input_condensed, os.path.join(savepath_rnn, 'CEPAC_input.json'))
     
     # parallelize input files
     c_op.parallelize_input(savepath_cepac, parallel = 5)
@@ -149,7 +149,7 @@ if (not os.path.exists(os.path.join(savepath, 'results'))) and (not os.path.exis
     # save feature tensor
     if not os.path.exists(savepath_rnn):
         os.makedirs(savepath_rnn)
-    utils.dump_json(feature_tensor, os.path.join(savepath_rnn, 'RNN_source.json'))
+    h_fun1.dump_json(feature_tensor, os.path.join(savepath_rnn, 'RNN_source.json'))
     
     # stop timer
     stop = timeit.default_timer()
