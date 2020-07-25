@@ -7,6 +7,8 @@ Created on Sat Jul 25 03:17:28 2020
 """
 import gym
 import DDPGAgent as Agent
+from DDPGActor import Actor 
+from DDPGCritic import Critic
 
 #Hyperparameters
 lr_actor        = 0.0005
@@ -28,10 +30,11 @@ def main():
 
     # define agent
     # NOTE: Agent defines actor, critic, target actor/critic, memory buffer ans noise process
-    #agent = Agent.Agent(env, lr_actor, lr_critic, 
-    #                    buffer_size = buffer_limit, sample_batch_size = batch_size, gamma = gamma, tau = tau)
+    agent = Agent.Agent(env, lr_actor, lr_critic, 
+                        buffer_size = buffer_limit, sample_batch_size = batch_size, gamma = gamma, tau = tau)
     
-    # initiate
+    # instantiate the actor and the critic network
+    #net_actor, net_critic = Actor(env, hidden1_dim, hidden2_dim), Critic
     
     #
     score = 0.0
