@@ -12,20 +12,24 @@ import torch.optim as optim
 import numpy as np
 
 class FFBellmanValues(nn.Module):
-    def __init__(self, learning_rate, input_dim, stepdown1_dim, n_actions):
+    def __init__(self, learning_rate, input_dim, hidden_dim1, hidden_dim2, n_actions):
         super(FFBellmanValues, self).__init__()
         
         # structural attributes for the ff network
-        self.input_dim = input_dim
-        self.stepdown1 = stepdown1_dim
+        self.input_dim = input_dim[0]
+        #self.stepdown1 = stepdown1_dim
         self.output_dim = n_actions
         
         # define ff network (not using stepdown right now)
-        self.network = nn.Linear(self.input_dim, self.output_dim)
+        self.network1 = nn.Linear(self.input_dim, hidden_dim1)
+        self.network2 = nn.Linear(hidden_dim1, hidden_dim2)
+        self.network3 = nn.Linear(hidden_dim2, self.output_dim)
+        self.activation = nn.ReLU()
         
         # optimizer and criterion definition
         self.optimizer = optim.Adam(self.parameters(), lr = learning_rate)
         self.criterion = nn.MSELoss()
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size = 300, gamma = 0.5)
         
         # send everything to device
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -34,14 +38,16 @@ class FFBellmanValues(nn.Module):
     def forward(self, state):
         
         # not using actiovation here
-        action_values = self.network(state)
+        action_values = self.activation(self.network1(state))
+        action_values = self.activation(self.network2(action_values))
+        action_values = self.network3(action_values)
         
         return action_values
     
 class Agent():
     def __init__(self, gamma, epsilon, learning_rate, input_dims, batch_size,
-                 n_actions, max_mem_size = 10000, epsilon_min = 0.01, epsilon_reduction = 5e-4):
-        
+                 n_actions, max_mem_size = 100000, epsilon_min = 0.01, epsilon_reduction = 1e-4):
+        self.input_dim = input_dims
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_min = epsilon_min
@@ -53,14 +59,14 @@ class Agent():
         self.memory_cntr = 0
         
         # define FFN for storing the values
-        self.FFvalues = FFBellmanValues(self.learnig_rate, self.input_dim, 32, n_actions)
+        self.FFvalues = FFBellmanValues(self.learning_rate, self.input_dim, 256, 256, n_actions)
         
-        # store the memory
-        self.state_memory = np.zeros((self.mem_size, *input_dims), dtyoe = np.float32)
-        self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype = np.float32)
-        self.action_memory = np.zeros((self.mem_size, *input_dims), dtype = np.float32)
-        self.reward_memory = np.zeros((self.mem_size, *input_dims), dtype = np.float32)
-        self.terminal_memory = np.zeros((self.mem_size, *input_dims), dtype = np.float32)
+        # memory space
+        self.state_memory = np.zeros((self.memory_size, *input_dims), dtype = np.float32)
+        self.new_state_memory = np.zeros((self.memory_size, *input_dims), dtype = np.float32)
+        self.action_memory = np.zeros(self.memory_size, dtype = np.float32)
+        self.reward_memory = np.zeros(self.memory_size, dtype = np.float32)
+        self.terminal_memory = np.zeros(self.memory_size, dtype = np.bool)
         
     def store_transition(self, state_cur, action_cur, reward, state_next, done):
         index = self.memory_cntr % self.memory_size
@@ -76,7 +82,7 @@ class Agent():
         
         # epsilon greedy action selection
         if np.random.random() > self.epsilon:
-            state = torch.tensor([observation]).to(self.Q_eval.device)
+            state = torch.tensor([observation]).to(self.FFvalues.device)
             action_values = self.FFvalues(state)
             action = torch.argmax(action_values).item()
         else:
@@ -88,7 +94,7 @@ class Agent():
     def learn(self):
         
         #
-        if self.mem_cntr < self.batch_size:
+        if self.memory_cntr < self.batch_size:
             return
         
         # start learning by setting the gradients to zero
@@ -99,10 +105,10 @@ class Agent():
         batch = np.random.choice(max_mem, self.batch_size, replace = False)
         batch_index = np.arange(self.batch_size, dtype = np.float32)
         
-        # access the required S-A-R-S
+        # get the required S-A-R-S
         state_batch = torch.tensor(self.state_memory[batch]).to(self.FFvalues.device)
-        reward_batch = torch.tensor(self.reward_memory[batch]).to(self.FFvalues.device)
         action_batch = self.action_memory[batch]
+        reward_batch = torch.tensor(self.reward_memory[batch]).to(self.FFvalues.device)
         new_state_batch = torch.tensor(self.new_state_memory[batch]).to(self.FFvalues.device)
         terminal_batch = torch.tensor(self.terminal_memory[batch]).to(self.FFvalues.device)
         
@@ -113,8 +119,8 @@ class Agent():
         q_target = reward_batch + self.gamma * torch.max(q_next, dim = 1)[0]
         
         # calculate loss
-        loss = self.FFvalues.criterion(q_target, q_cur).to(self.FFvalue.device)
-        loss.backwards()
+        loss = self.FFvalues.criterion(q_target, q_cur).to(self.FFvalues.device)
+        loss.backward()
         
         # update parameters
         self.FFvalues.optimizer.step()
