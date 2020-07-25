@@ -78,17 +78,17 @@ class Agent:
         td_estimation = self.critic(obs, act)
         
         # calculate td-error and update the critic network parameters
-        actor_error = F.smooth_l1_loss(td_estimation, td_target.detach())
+        critic_error = F.smooth_l1_loss(td_estimation, td_target.detach())
         self.critic.optimizer.zero_grad()
-        actor_error.backward()
+        critic_error.backward()
         self.critic.optimizer.step()
         
         # calculate q value via actor and critic network
         a_hat = self.actor.forward(obs)
-        critic_error = -self.critic.forward(obs, a_hat).mean()
-        self.critic.optimizer.zero_grad()
-        critic_error.backward()
-        self.critic.optimizer.step()
+        actor_error = -self.critic.forward(obs, a_hat).mean()
+        self.actor.optimizer.zero_grad()
+        actor_error.backward()
+        self.actor.optimizer.step()
         
         # soft update
         self.soft_update()

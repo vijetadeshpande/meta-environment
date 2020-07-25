@@ -12,7 +12,7 @@ import torch.optim as optim
 import numpy as np
 
 class Actor(nn.Module):
-    def __init__(self, env, hidden1_dim, hidden2_dim, learning_rate):
+    def __init__(self, env, hidden1_dim, hidden2_dim, learning_rate = 0.001):
         super(Actor, self).__init__()
         
         #
@@ -33,12 +33,12 @@ class Actor(nn.Module):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.to(self.device)
 
-    def forward(self, x):
+    def forward(self, obs):
         
-        if not isinstance(x, torch.Tensor):
-            x = torch.tensor(x).float().to(self.device)
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs).float().to(self.device)
         
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc1(obs))
         x = F.relu(self.fc2(x))
         action = torch.tanh(self.fc_mu(x))
         u = torch.tensor(self.action_space.high).float().to(self.device)

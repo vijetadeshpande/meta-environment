@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 class Critic(nn.Module):
-    def __init__(self, env, hidden1_dim, hidden2_dim, learning_rate):
+    def __init__(self, env, hidden1_dim, hidden2_dim, learning_rate = 0.001):
         super(Critic, self).__init__()
         
         # 
@@ -34,6 +34,9 @@ class Critic(nn.Module):
         self.to(self.device)
         
     def forward(self, obs, act):
+        
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs).float().to(self.device)
         
         h1 = F.relu(self.fc_s(obs))
         h2 = F.relu(self.fc_a(act))
