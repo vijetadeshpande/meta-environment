@@ -107,8 +107,8 @@ def weibull_tp(coverage, target_time, shape, horizon):
     
     # modify tp: after target time we don't enroll anyone in prep program
     tp[int(target_time):] = 0
-    scale1 = np.divide(target_time, (np.power((-np.log(1 - coverage)), (1/shape))))
-    cdf_c = 1 - np.exp(-np.power(np.divide(t_step, scale1, dtype = float), shape, dtype = float))
+    #scale1 = np.divide(target_time, (np.power((-np.log(1 - coverage)), (1/shape))))
+    #cdf_c = 1 - np.exp(-np.power(np.divide(t_step, scale1, dtype = float), shape, dtype = float))
     
     return tp
 

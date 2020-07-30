@@ -1,4 +1,0 @@
-city,InitAge mean,InitAge sd,UseHIVIncidReduction,HIVIncidReductionStopTime,HIVIncidReductionCoefficient,HIVmthIncidMale,PrEPEnable,PrEPCoverage,PrEPDuration,PrEPShape,onART,prevalence,DynamicTransmissionPropHRGAttrib,DynamicTransmissionNumHIVPosHRG,InitAge,PrepIncidMale,DynamicTransmissionNumHIVNegHRG,DynamicTransmissionNumTransmissionsHRG
-rio,360,115.2,0,60,12000,4.3,0,30,36,2,0.73,0.153002169,0.7,16999,-10,1.249408,94104,3.0551739
-salvador,348,97.2,0,60,12000,2.45,0,30,36,2,0.73,0.153002169,0.7,16999,-10,0.711872,94104,3.0551739
-manaus,300,70.8,0,60,12000,1.4,0,30,36,2,0.73,0.153002169,0.7,16999,-10,0.406784,94104,3.0551739

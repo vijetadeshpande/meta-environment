@@ -54,6 +54,7 @@ class Model(nn.Module):
         
         # tensor for storing outputs at each time step
         outputs = torch.zeros(TRG_LEN, BATCH_SIZE, OUTPUT_DIM).to(self.device)
+        output = outputs[0, :, :].unsqueeze(0)
         
         # inputs required for first time step
         hidden = torch.zeros(self.n_layers, BATCH_SIZE, self.hidden_dim)

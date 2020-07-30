@@ -51,6 +51,6 @@ class ReplayBuffer(object):
                     torch.tensor(a).float(),
                     torch.tensor(r).float(), 
                     torch.tensor(s_next).float(), 
-                    torch.tensor(done))
+                    torch.tensor(done).float())
 
 

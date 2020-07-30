@@ -46,9 +46,11 @@ class Agent:
         
     def take_action(self, observation):
         
-        observation = torch.from_numpy(observation).float().device(self.actor.device)
+        if not isinstance(observation, torch.Tensor):
+            observation = torch.from_numpy(observation).float().device(self.actor.device)
+            
         action = self.actor.forward(observation) + torch.tensor(self.noise()).float().to(self.actor.device)
-        action = action.numpy()
+        #action = action.numpy()
         
         return action
     
@@ -72,19 +74,21 @@ class Agent:
     
         # calculate td-target via target network
         act_next = self.target_actor.forward(obs_next)
-        td_target =  r + (self.target_critic.forward(obs_next, act_next) * self.gamma)
+        td_target =  r + (self.target_critic.forward(obs_next, act_next) * self.gamma * done)
         
         # calculte td-estimation via critic network
         td_estimation = self.critic(obs, act)
         
         # calculate td-error and update the critic network parameters
+        self.actor.eval()
         critic_error = F.smooth_l1_loss(td_estimation, td_target.detach())
         self.critic.optimizer.zero_grad()
         critic_error.backward()
         self.critic.optimizer.step()
         
         # calculate q value via actor and critic network
-        a_hat = self.actor.forward(obs)
+        self.actor.train()
+        a_hat = self.take_action(obs)
         actor_error = -self.critic.forward(obs, a_hat).mean()
         self.actor.optimizer.zero_grad()
         actor_error.backward()
@@ -93,7 +97,7 @@ class Agent:
         # soft update
         self.soft_update()
         
-        return
+        return critic_error.detach().numpy(), actor_error.detach().numpy()
         
         
         
