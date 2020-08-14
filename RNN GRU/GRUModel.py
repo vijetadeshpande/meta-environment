@@ -11,7 +11,7 @@ from numpy import random
 
 
 class Model(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False, teacher_forcing_ratio = 0.5):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout, device, is_bidirectional = False):#, teacher_forcing_ratio = 0.5):
         super().__init__()
         
         # set attributes
@@ -21,7 +21,7 @@ class Model(nn.Module):
         self.n_layers = n_layers
         self.is_bidirectional = is_bidirectional
         self.device = device
-        self.teacher_forcing_ratio = teacher_forcing_ratio
+        #self.teacher_forcing_ratio = teacher_forcing_ratio
         
         # dropout
         self.dropout = nn.Dropout(dropout)

@@ -25,7 +25,7 @@ def evaluate(model, data, criterion, device, seqpath):
     denorm_targets = []
     
     # import denormalization parameters
-    #mean_sd = pd.read_csv(os.path.join(seqpath, 'output_mean_and_sd.csv'), header = 0, index_col = 0)
+    mean_sd = pd.read_csv(os.path.join(seqpath, 'output_mean_and_sd.csv'), header = 0, index_col = 0)
     
     with torch.no_grad():
         for example in data:
@@ -39,13 +39,13 @@ def evaluate(model, data, criterion, device, seqpath):
             outputs.append(output.numpy())
             
             # denormalize prediction and append
-            #denorm_output = h_fun1.denormalize(deepcopy(output.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
-            #denorm_outputs.append(denorm_output)
+            denorm_output = h_fun1.denormalize(deepcopy(output.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
+            denorm_outputs.append(denorm_output)
             
             # denormalize target and save
             trg = trg.permute(1, 0, 2)
-            #denorm_target = h_fun1.denormalize(deepcopy(trg.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
-            #enorm_targets.append(denorm_target)
+            denorm_target = h_fun1.denormalize(deepcopy(trg.numpy()), mean_sd.iloc[0, :].values, mean_sd.iloc[1, :].values)
+            denorm_targets.append(denorm_target)
             
             # dimension check:
             # trg = [target_len, batch_size, out dim]

@@ -21,6 +21,8 @@ import random
 import sys
 sys.path.insert(1, r'/Users/vijetadeshpande/Documents/GitHub/CEPAC-extraction-tool')
 import link_to_cepac_in_and_out_files as link
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # build state of the system
 def build_state(input_signal, sample_bounds, DEVICE = 'cpu', output_type = 'torch'):
@@ -215,4 +217,41 @@ def create_target_tensor(path, device, SEQ_LEN = 60):
     
     return targets, targets_std
     
+def plot_heatmap(val_to_replace, percentage_decline, path, model = 'RNN'):
+    
+    # surface plot
+    x_grid, y_grid = np.meshgrid(val_to_replace['PrEPDuration'], val_to_replace['PrEPCoverage'])
+    z_grid = np.array(percentage_decline).reshape(x_grid.shape)
+    x = np.ravel(x_grid)
+    y = np.ravel(y_grid)
+    z = np.array(percentage_decline)
+    sb_heatmap = pd.DataFrame()
+    sb_heatmap['Time to max. uptake (months)'] = np.floor(x).astype(int)
+    sb_heatmap['PrEP uptake (%)'] = np.floor(y * 100).astype(int)
+    sb_heatmap['Percentage declination in incidence'] = z
+    sb_heatmap = sb_heatmap.sort_values(by = 'Time to max. uptake (months)')
+    plot_df = pd.pivot(data = sb_heatmap,
+                       index = 'Time to max. uptake (months)',
+                       columns = 'PrEP uptake (%)',
+                       values = 'Percentage declination in incidence')
+    
+    
+    # choose color theme
+    #cmap = cm.get_cmap('RdYlGn')
+    #cmap = 'PuBu' #'Reds'
+    #my_col_map = ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"] # high point is dark blue
+    #my_col_map_r = ["#08519c", "#3182bd", "#6baed6", "#bdd7e7", "#eff3ff"] # high point is white
+    cmap = 'Greys_r'#'PuBu_r'
+    #cmap = sb.color_palette(cmap)
+    
+    plt.figure(figsize=(10, 5))
+    sns.set(font_scale=1.2)
+    heatmap_plot = sns.heatmap(plot_df, annot = True, fmt = '0.1f', linewidths = 0.2, cmap = cmap, cbar_kws={'label': 'Percentage reduction in incidence\n due to only community benefit'})
+    heatmap_plot.figure.axes[0].invert_yaxis()
+    # if we need to rotate the axis ticks
+    if False:
+        heatmap_plot.set_yticklabels(heatmap_plot.get_yticklabels(), rotation = 45)
+    heatmap_plot.figure.savefig(os.path.join(path, model + '_Percentage declination in incidence.jpg'))
+   
+    return
     

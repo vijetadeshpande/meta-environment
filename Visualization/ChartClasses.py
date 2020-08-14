@@ -32,11 +32,11 @@ def filename_to_key(filename):
     
     #
     if 'Van' in filename:
-        key = 'Vanilla RNN'
+        key = 'RNN Vanilla'
     elif 'GRU' in filename:
-        key = 'RNN with GRU'
+        key = 'RNN GRU'
     elif 'LSTM' in filename:
-        key = 'RNN with LSTM'
+        key = 'RNN LSTM'
     elif ('Attention' in filename) or ('Attn' in filename) or ('attn' in filename):
         key = 'Enc-Dec with attention'
     else:
@@ -92,7 +92,7 @@ class FeatureSequencePlot:
         
         # shape parameters
         NUM_MODELS = len(data)
-        TRG_SEQ, TEST_SAMPLES, OUT_FEATURES = data['Vanilla RNN']['CEPAC'].shape
+        TRG_SEQ, TEST_SAMPLES, OUT_FEATURES = data['RNN Vanilla']['CEPAC'].shape
         
         # initiate dataframe to store the results
         df = pd.DataFrame(-1, index = np.arange(TRG_SEQ * NUM_MODELS * TEST_SAMPLES * OUT_FEATURES), columns = ['t (simulation month)', 'y', 'feature', 'Model', 'Example number'])
@@ -165,7 +165,7 @@ class FeatureSequencePlot:
         # set plot encironment
         sns.set_style("darkgrid", {"axes.facecolor": ".9"})
         sns.set_context("notebook", rc={"lines.linewidth": 1.5}, font_scale = 1.2)
-        aspect_r = 2
+        aspect_r = 1.4
         line_alpha = 0.9
         
         

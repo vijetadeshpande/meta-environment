@@ -73,7 +73,7 @@ def init_training(data_object, par_dict, datapath, respath):
 
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.3)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.7)
 
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]

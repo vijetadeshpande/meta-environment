@@ -69,7 +69,7 @@ def init_training(data_object, par_dict, datapath, respath):
     
     # define optimizer
     optimizer = optim.Adam(model.parameters(), lr = L_RATE)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 30, gamma = 0.3)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 20, gamma = 0.7)
     
     # define error function (ignore padding and sos/eos tokens)
     #TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -140,19 +140,19 @@ def init_training(data_object, par_dict, datapath, respath):
     
     
     # testing/prediction
-    #model.load_state_dict(torch.load('tut1-model.pt'))
+    model.load_state_dict(torch.load('RNN_GRU.pt'))
     prediction = evaluate(model, data_test, criterion, DEVICE, datapath)
     test_loss = prediction['average epoch loss']
     
     # save predicted values
-    #filename = os.path.join(respath, 'GRU_RNN_test_result_samples.json')
-    #utils.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
+    filename = os.path.join(respath, 'RNNGRU_test_result_samples.json')
+    h_fun1.dump_json([prediction['denormalized prediction'][0].tolist(), prediction['denormalized target'][0].tolist()], filename)
     
     print(f'| Test Loss: {test_loss:.4f} | Test PPL: {math.exp(test_loss):7.4f} |')
     
     # save df for lineplot
-    plot_df = pd.DataFrame(train_losses, columns = ['Mean Squared Error'])
-    plot_df['Epoch'] = np.arange(len(plot_df))
+    #plot_df = pd.DataFrame(train_losses, columns = ['Mean Squared Error'])
+    #plot_df['Epoch'] = np.arange(len(plot_df))
     #plot_df.to_csv(os.path.join(respath, 'RNN GRU_Error plot.csv'))
     
     

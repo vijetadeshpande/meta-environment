@@ -33,9 +33,9 @@ class GRUApproximator(nn.Module):
         
         # create model
         INPUT_DIM, OUTPUT_DIM = 8, 3
-        HID_DIM, N_LAYERS, DROPOUT  = 16, 2, 0
+        HID_DIM, N_LAYERS, DROPOUT  = 24, 2, 0
         DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = GRUModel(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE, teacher_forcing_ratio = 0)
+        model = GRUModel(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
         model = model.to(DEVICE)
         
         # load file
@@ -141,9 +141,9 @@ class LSTMApproximator(nn.Module):
         
         # create model
         INPUT_DIM, OUTPUT_DIM = 8, 3
-        HID_DIM, N_LAYERS, DROPOUT  = 256, 2, 0
+        HID_DIM, N_LAYERS, DROPOUT  = 16, 2, 0
         DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = LSTMModel(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE, teacher_forcing_ratio = 0)
+        model = LSTMModel(INPUT_DIM, HID_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT, DEVICE)
         model = model.to(DEVICE)
         
         # load file
