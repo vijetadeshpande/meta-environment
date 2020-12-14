@@ -35,7 +35,7 @@ class Environment:
     def __init__(self, RNN_model = 'Vanilla', 
                  parameter_path = r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Data and results/CEPAC RUNS/regression model input'):
         if RNN_model == 'Vanilla':
-            self.model = FVan(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/RNNVan.pt')
+            self.model = FVan(r'/Users/vijetadeshpande/Documents/GitHub/meta-environment/Hyper parameter tuning/trained model parameters/RNNVan.pt')
         elif RNN_model == 'GRU':
             self.model = FGRU()
         elif RNN_model == 'LSTM':
